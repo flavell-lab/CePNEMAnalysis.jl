@@ -10,6 +10,7 @@ using ProgressMeter
 using Plots
 using TSne
 using ColorSchemes
+using MultipleTesting
 
 include("data.jl")
 include("dist.jl")
@@ -33,6 +34,7 @@ export
     make_deconvolved_lattice,
     neuron_p_vals,
     categorize_neurons,
+    categorize_all_neurons,
     # plot.jl
     make_deconvolved_heatmap
 end # module

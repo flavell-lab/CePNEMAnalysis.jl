@@ -355,4 +355,28 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     return categories, corrected_p_vals
 end
 
+"""
+Categorizes all neurons in all datasets at all time ranges.
+
+# Arguments:
+- `deconvolved_activity`: Dictionary of deconvolved activity values at lattice points.
+- `p`: Significant `p`-value
+- `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
+"""
+function categorize_all_neurons(deconvolved_activity, p, θh_pos_is_ventral)
+    neuron_categorization = Dict()
+    neuron_p_vals = Dict()
+    @showprogress for dataset = keys(deconvolved_activity)
+        neuron_categorization[dataset] = Dict()
+        neuron_p_vals[dataset] = Dict()
+        for rng = 1:length(fit_results[dataset]["ranges"])
+            empty_cat = Dict()
+            for n = 1:fit_results[dataset]["num_neurons"]
+                empty_cat[n] = zeros(size(deconvolved_activity[dataset][rng][n]))
+            end
+            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset])
+        end
+    end
+    return neuron_categorization, neuron_p_vals
+end
 

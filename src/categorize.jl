@@ -359,11 +359,12 @@ end
 Categorizes all neurons in all datasets at all time ranges.
 
 # Arguments:
+- `fit_results`: Gen fit results.
 - `deconvolved_activity`: Dictionary of deconvolved activity values at lattice points.
-- `p`: Significant `p`-value
+- `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 """
-function categorize_all_neurons(deconvolved_activity, p, θh_pos_is_ventral)
+function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is_ventral)
     neuron_categorization = Dict()
     neuron_p_vals = Dict()
     @showprogress for dataset = keys(deconvolved_activity)
@@ -380,3 +381,73 @@ function categorize_all_neurons(deconvolved_activity, p, θh_pos_is_ventral)
     return neuron_categorization, neuron_p_vals
 end
 
+"""
+Detects all neurons with encoding changes in all datasets across all time ranges.
+
+# Arguments
+- `fit_results`: Gen fit results.
+- `p`: Significant `p`-value.
+- `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
+- `thresh` (optional, default `25`): Location to compute behavior percentiles. 
+"""
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
+    encoding_changes = Dict()
+    encoding_change_p_vals = Dict()
+    @showprogress for dataset in keys(fit_results)
+        n_neurons = fit_results[dataset]["num_neurons"]
+        n_ranges = length(fit_results[dataset]["ranges"])
+        v = fit_results[dataset]["v"]
+        θh = fit_results[dataset]["θh"]
+        P = fit_results[dataset]["P"]
+        
+        encoding_changes[dataset] = Dict()
+        encoding_change_p_vals[dataset] = Dict()
+
+        for t1 = 1:n_ranges-1
+            range1 = fit_results[dataset]["ranges"][t1]
+            v_range_1 = compute_range(v[range1], thresh, 1)
+            θh_range_1 = compute_range(θh[range1], thresh, 2)
+            P_range_1 = compute_range(P[range1], thresh, 3)
+
+            for t2 = t1+1:n_ranges
+                range2 = fit_results[dataset]["ranges"][t2]
+                v_range_2 = compute_range(v[range2], thresh, 1)
+                θh_range_2 = compute_range(θh[range2], thresh, 2)
+                P_range_2 = compute_range(P[range2], thresh, 3)
+
+                v_rng = [max(v_range_1[1], v_range_2[1]), max(v_range_1[2], v_range_2[2]),
+                            min(v_range_1[3], v_range_2[3]), min(v_range_1[4], v_range_2[4])]
+                θh_rng = [max(θh_range_1[1], θh_range_2[1]), min(θh_range_1[2], θh_range_2[2])]
+                P_rng = [max(P_range_1[1], P_range_2[1]), min(P_range_1[2], P_range_2[2])]
+
+                # regions don't intersect 
+                if sort(v_rng) != v_rng
+                    @warn("velocity intervals don't overlap")
+                    continue
+                end
+                if  sort(θh_rng) != θh_rng
+                    @warn("head angle intervals don't overlap")
+                    continue
+                end
+                if sort(P_rng) != P_rng
+                    @warn("pumping intervals don't overlap")
+                    continue
+                end
+                
+                deconvolved_activities_1 = Dict()
+                deconvolved_activities_2 = Dict()
+                
+                for neuron = 1:n_neurons
+                    sampled_trace_params_1 = fit_results[dataset]["sampled_trace_params"][t1,neuron,:,:]
+                    sampled_trace_params_2 = fit_results[dataset]["sampled_trace_params"][t2,neuron,:,:]
+                    
+                    deconvolved_activities_1[neuron] = get_deconvolved_activity(sampled_trace_params_1, v_rng, θh_rng, P_rng)
+                    deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
+                end
+                
+                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral)
+            end
+        end
+    end
+    return encoding_changes, encoding_change_p_vals
+end

@@ -1,3 +1,14 @@
+"""
+Loads Gen output data.
+
+# Arguments:
+- `datasets`: Datasets to load
+- `path_output`: Path to Gen output. Data must be stored in `path_output/dataset/rng1torng2/h5/neuron.h5`
+- `path_h5`: Path to H5 file for the dataset, which must be stored in `dataset-data.h5` in this directory.
+- `n_params`: Number of parameters in the Gen model
+- `n_particles`: Number of particles in the Gen fit
+- `n_samples`: Number of samples from the posterior given by the Gen fit
+"""
 function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, n_samples)
     fit_results = Dict()
     incomplete_datasets = Dict()

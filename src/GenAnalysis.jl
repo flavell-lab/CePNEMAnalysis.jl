@@ -30,8 +30,9 @@ export
     deconvolved_model_nl7b,
     compute_range,
     get_deconvolved_activity,
+    make_deconvolved_lattice,
     neuron_p_vals,
     categorize_neurons,
     # plot.jl
-    make_deconv_heatmap
+    make_deconvolved_heatmap
 end # module

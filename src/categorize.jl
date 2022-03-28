@@ -51,6 +51,69 @@ function get_deconvolved_activity(sampled_trace_params, v_rng, θh_rng, P_rng)
     return deconvolved_activity
 end
 
+
+"""
+Makes deconvolved lattices for each dataset, time range, and neuron in `fit_results`.
+Returns velocity, head angle, and pumping ranges, and the deconvolved activity of each neuron at each lattice point defined by them,
+for both statistically useful ranges (first return value), and full ranges (second return value) designed for plotting consistency.
+"""
+function make_deconvolved_lattice(fit_results)
+    deconvolved_activity = Dict()
+    v_ranges = Dict()
+    θh_ranges = Dict()
+    P_ranges = Dict()
+    deconvolved_activity_plot = Dict()
+    v_ranges_plot = Dict()
+    θh_ranges_plot = Dict()
+    P_ranges_plot = Dict()
+    @showprogress for dataset in keys(fit_results)
+        deconvolved_activity[dataset] = Dict()
+        v_ranges[dataset] = Dict()
+        θh_ranges[dataset] = Dict()
+        P_ranges[dataset] = Dict()
+
+        deconvolved_activity_plot[dataset] = Dict()
+
+        v_all = fit_results[dataset]["v"]
+        θh_all = fit_results[dataset]["θh"]
+        P_all = fit_results[dataset]["P"]
+        
+        v_ranges_plot[dataset] = compute_range(v_all, 5, 1)
+        θh_ranges_plot[dataset] = compute_range(θh_all, 5, 2)
+        P_ranges_plot[dataset] = compute_range(P_all, 5, 3)
+
+        for rng=1:4
+            deconvolved_activity[dataset][rng] = Dict()
+
+            deconvolved_activity_plot[dataset][rng] = Dict()
+
+            v = v_all[fit_results[dataset]["ranges"][rng]]
+            θh = θh_all[fit_results[dataset]["ranges"][rng]]
+            P = P_all[fit_results[dataset]["ranges"][rng]]
+
+            results = fit_results[dataset]["sampled_trace_params"]
+
+            v_ranges[dataset][rng] = compute_range(v, 25, 1)
+            θh_ranges[dataset][rng] = compute_range(θh, 25, 2)
+            P_ranges[dataset][rng] = compute_range(P, 25, 3)
+            
+            
+
+            for neuron=1:size(results,2)
+                deconvolved_activity[dataset][rng][neuron] =
+                        get_deconvolved_activity(results[rng,neuron,:,:], v_ranges[dataset][rng],
+                                θh_ranges[dataset][rng], P_ranges[dataset][rng])
+                
+                deconvolved_activity_plot[dataset][rng][neuron] =
+                        get_deconvolved_activity(results[rng,neuron,:,:], v_ranges_plot[dataset],
+                                θh_ranges_plot[dataset], P_ranges_plot[dataset])
+            end
+        end
+    end
+    return (v_ranges, θh_ranges, P_ranges, deconvolved_activity), (v_ranges_plot, θh_ranges_plot, P_ranges_plot, deconvolved_activity_plot)
+end
+
+
 """
 Computes neuron p-values by computing differences between two different deconvolved activities.
 To find encoding of a neuron, set the second activity to 0.

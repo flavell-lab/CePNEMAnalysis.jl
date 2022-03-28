@@ -1,4 +1,4 @@
-function make_deconv_heatmap(deconvolved_activity, axis; res=200)
+function make_deconvolved_heatmap(deconvolved_activity, axis; res=200)
     @assert(res % 2 == 0)
     all_hmap = zeros(size(deconvolved_activity,1),res, res)
     for i=1:size(deconvolved_activity,1)

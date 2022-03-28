@@ -274,15 +274,15 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["v"]["fwd_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,4,3] < p]
     categories["v"]["all"] = [n for n in 1:max_n if v_p_vals_all[n] < p]
 
-    corrected_p_vals["v"]["rev"] .= v_p_vals[n,4,1]
-    corrected_p_vals["v"]["fwd"] .= v_p_vals[n,1,4]
-    corrected_p_vals["v"]["rev_slope_pos"] .= v_p_vals[n,1,2]
-    corrected_p_vals["v"]["rev_slope_neg"] .= v_p_vals[n,2,1]
-    corrected_p_vals["v"]["rect_pos"] .= v_p_vals[n,2,3]
-    corrected_p_vals["v"]["rect_neg"] .= v_p_vals[n,3,2]
-    corrected_p_vals["v"]["fwd_slope_pos"] .= v_p_vals[n,3,4]
-    corrected_p_vals["v"]["fwd_slope_neg"] .= v_p_vals[n,4,3]
-    corrected_p_vals["v"]["all"] .= v_p_vals_all[n]
+    corrected_p_vals["v"]["rev"] .= v_p_vals[:,4,1]
+    corrected_p_vals["v"]["fwd"] .= v_p_vals[:,1,4]
+    corrected_p_vals["v"]["rev_slope_pos"] .= v_p_vals[:,1,2]
+    corrected_p_vals["v"]["rev_slope_neg"] .= v_p_vals[:,2,1]
+    corrected_p_vals["v"]["rect_pos"] .= v_p_vals[:,2,3]
+    corrected_p_vals["v"]["rect_neg"] .= v_p_vals[:,3,2]
+    corrected_p_vals["v"]["fwd_slope_pos"] .= v_p_vals[:,3,4]
+    corrected_p_vals["v"]["fwd_slope_neg"] .= v_p_vals[:,4,3]
+    corrected_p_vals["v"]["all"] .= v_p_vals_all[:]
     
     if !θh_pos_is_ventral
         fwd_θh_dorsal = adjust([neuron_cats[n]["fwd_θh_encoding"] for n in 1:max_n], BenjaminiHochberg())

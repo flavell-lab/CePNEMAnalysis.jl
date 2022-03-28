@@ -35,6 +35,7 @@ export
     neuron_p_vals,
     categorize_neurons,
     categorize_all_neurons,
+    detect_encoding_changes,
     # plot.jl
     make_deconvolved_heatmap
 end # module

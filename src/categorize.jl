@@ -213,12 +213,16 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["θh"]["rect_fwd_dorsal"] = ones(max_n)
     corrected_p_vals["θh"]["rect_rev_ventral"] = ones(max_n)
     corrected_p_vals["θh"]["rect_rev_dorsal"] = ones(max_n)
+    corrected_p_vals["θh"]["dorsal"] = ones(max_n)
+    corrected_p_vals["θh"]["ventral"] = ones(max_n)
     corrected_p_vals["θh"]["all"] = ones(max_n)
     corrected_p_vals["P"] = Dict()
     corrected_p_vals["P"]["rect_fwd_act"] = ones(max_n)
     corrected_p_vals["P"]["rect_fwd_inh"] = ones(max_n)
     corrected_p_vals["P"]["rect_rev_act"] = ones(max_n)
     corrected_p_vals["P"]["rect_rev_inh"] = ones(max_n)
+    corrected_p_vals["P"]["act"] = ones(max_n)
+    corrected_p_vals["P"]["inh"] = ones(max_n)
     corrected_p_vals["P"]["all"] = ones(max_n)
     
     v_p_vals_uncorr = ones(max_n,4,4)
@@ -445,7 +449,7 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
                     deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
                 end
                 
-                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral)
+                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral[dataset])
             end
         end
     end

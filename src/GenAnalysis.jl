@@ -16,6 +16,7 @@ include("data.jl")
 include("dist.jl")
 include("categorize.jl")
 include("plot.jl")
+include("tsne.jl")
 
 export
     # data.jl
@@ -36,6 +37,8 @@ export
     categorize_neurons,
     categorize_all_neurons,
     detect_encoding_changes,
+    # tsne.jl
+    make_distance_matrix,
     # plot.jl
     make_deconvolved_heatmap
 end # module

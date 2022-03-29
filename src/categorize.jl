@@ -189,6 +189,7 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["P"]["rect_rev_act"] = []
     categories["P"]["rect_rev_inh"] = []
     categories["P"]["all"] = []
+    categories["all"] = []
 
     neuron_cats = Dict()
     for neuron = keys(deconvolved_activities_1)
@@ -224,6 +225,7 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["act"] = ones(max_n)
     corrected_p_vals["P"]["inh"] = ones(max_n)
     corrected_p_vals["P"]["all"] = ones(max_n)
+    corrected_p_vals["all"] = ones(max_n)
     
     v_p_vals_uncorr = ones(max_n,4,4)
     v_p_vals = ones(max_n,4,4)

@@ -18,6 +18,9 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     rngs_use = Dict()
     idx_arr = Dict()
     idx_last = 0
+    v_range = [-Inf,0,0,Inf]
+    θh_range = [-Inf,Inf]
+    P_range = [-Inf,Inf]
     for (i, dataset) = enumerate(datasets)
         rng_use = []
         rng_qual = []
@@ -41,6 +44,12 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
         for rng in rngs_use
             push!(idx_arr[dataset], idx_last)
             idx_last += length(neuron_categorization[dataset][rng]["all"])
+            v_range[1] = max(v_range[1], v_ranges[dataset][rng][1])
+            v_range[2] = min(v_range[2], v_ranges[dataset][rng][2])
+            θh_range[1] = max(θh_range[1], θh_ranges[dataset][rng][1])
+            θh_range[2] = min(θh_range[2], θh_ranges[dataset][rng][2])
+            P_range[1] = max(P_range[1], P_ranges[dataset][rng][1])
+            P_range[2] = min(P_range[2], P_ranges[dataset][rng][2])
         end
     end
 
@@ -48,6 +57,8 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     dataset_ids = fill("", idx_last)
     rng_ids = zeros(idx_last)
     neuron_ids = zeros(idx_last)
+
+    deconvolved_activities = zeros(idx_last, length(v_range), length(θh_range), length(P_range))
     
     @showprogress for dataset = datasets
         if isempty(rngs_use[dataset])
@@ -56,7 +67,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
         for (rng_idx,rng) = enumerate(rngs_use[dataset])
             offset1 = 0
             n_encoding = neuron_categorization[dataset][rng]["all"]
-            @showprogress for n1 = 1:fit_results[dataset]["num_neurons"]
+            for n1 = 1:fit_results[dataset]["num_neurons"]
                 if !(n1 in n_encoding)
                     continue
                 end
@@ -64,17 +75,22 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
                 dataset_ids[idx1] = dataset
                 rng_ids[idx1] = rng
                 neuron_ids[idx1] = n1
+                deconvolved_activities[idx1,:,:,:] .= get_deconvolved_activity(fit_results[dataset]["sampled_trace_params"][rng,n1,:,:], v_range, θh_range, P_range)
+            end
 
-                if n1 == fit_results[dataset]["num_neurons"]
+            for n1 = 1:fit_results[dataset]["num_neurons"]-1
+                if !(n1 in n_encoding)
                     continue
                 end
+                idx1 = sum(n_encoding .<= n1) + idx_arr[dataset][rng_idx]
+
                 for n2 = n1+1:fit_results[dataset]["num_neurons"]
                     if !(n2 in n_encoding)
                         continue
                     end
-                    idx2 = sum(n_encoding .<= n2)
+                    idx2 = sum(n_encoding .<= n2) + idx_arr[dataset][rng_idx]
 
-                    n_cat = categorize_neuron(deconvolved_activity[dataset][rng][n1], deconvolved_activity[dataset][rng][n2], compute_p=false)
+                    n_cat = categorize_neuron(deconvolved_activity[idx1], deconvolved_activity[idx2], compute_p=false)
                     
                     distance_matrix[idx1,idx2] = v_weight * sum([sum(n_cat["v_encoding"][i,i+1,:,:]) for i=1:3])
                     distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_θh_encoding"])
@@ -87,5 +103,5 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
                 end
             end
         end
-    return distance_matrix, dataset_ids, rng_ids, neuron_ids
+    return distance_matrix, deconvolved_activities, dataset_ids, rng_ids, neuron_ids
 end

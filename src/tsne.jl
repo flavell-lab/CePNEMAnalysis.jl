@@ -41,7 +41,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
         end
 
         idx_arr[dataset] = []
-        for rng in rngs_use
+        for rng in rngs_use[dataset]
             push!(idx_arr[dataset], idx_last)
             idx_last += length(neuron_categorization[dataset][rng]["all"])
             v_range[1] = max(v_range[1], v_ranges[dataset][rng][1])

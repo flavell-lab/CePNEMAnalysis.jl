@@ -61,7 +61,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     deconvolved_activities = zeros(idx_last, length(v_range), length(θh_range), length(P_range))
     
     @showprogress for dataset = datasets
-        if isempty(rngs_use[dataset])
+        if !haskey(rngs_use, dataset)
             continue
         end
         for (rng_idx,rng) = enumerate(rngs_use[dataset])

@@ -103,5 +103,6 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
                 end
             end
         end
+    end
     return distance_matrix, deconvolved_activities, dataset_ids, rng_ids, neuron_ids
 end

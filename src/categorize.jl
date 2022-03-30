@@ -78,14 +78,18 @@ function make_deconvolved_lattice(fit_results, thresh, plot_thresh)
         θh_all = fit_results[dataset]["θh"]
         P_all = fit_results[dataset]["P"]
         
-        v_ranges_plot[dataset] = compute_range(v_all, 5, 1)
-        θh_ranges_plot[dataset] = compute_range(θh_all, 5, 2)
-        P_ranges_plot[dataset] = compute_range(P_all, 5, 3)
+        v_ranges_plot[dataset] = Dict()
+        θh_ranges_plot[dataset] = Dict()
+        P_ranges_plot[dataset] = Dict()
 
         for rng=1:4
             deconvolved_activity[dataset][rng] = Dict()
 
             deconvolved_activity_plot[dataset][rng] = Dict()
+
+            v_ranges_plot[dataset][rng] = compute_range(v_all, plot_thresh, 1)
+            θh_ranges_plot[dataset][rng] = compute_range(θh_all, plot_thresh, 2)
+            P_ranges_plot[dataset][rng] = compute_range(P_all, plot_thresh, 3)
 
             v = v_all[fit_results[dataset]["ranges"][rng]]
             θh = θh_all[fit_results[dataset]["ranges"][rng]]
@@ -105,8 +109,8 @@ function make_deconvolved_lattice(fit_results, thresh, plot_thresh)
                                 θh_ranges[dataset][rng], P_ranges[dataset][rng])
                 
                 deconvolved_activity_plot[dataset][rng][neuron] =
-                        get_deconvolved_activity(results[rng,neuron,:,:], v_ranges_plot[dataset],
-                                θh_ranges_plot[dataset], P_ranges_plot[dataset])
+                        get_deconvolved_activity(results[rng,neuron,:,:], v_ranges_plot[dataset][rng],
+                                θh_ranges_plot[dataset][rng], P_ranges_plot[dataset][rng])
             end
         end
     end

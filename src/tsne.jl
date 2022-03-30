@@ -91,8 +91,8 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
             distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_θh_encoding"]) * θh_STD / (θh_range[2] - θh_range[1])
             distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
             distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
-            distance_matrix[idx1,idx2] += s_weight * abs(median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n1,:,7]))
-                    - median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n2,:,7])))
+            distance_matrix[idx1,idx2] += s_weight * abs(median(compute_s.(fit_results[dataset_ids[idx1]]["sampled_trace_params"][rng_ids[idx1],neuron_ids[idx1],:,7]))
+                    - median(compute_s.(fit_results[dataset_ids[idx2]]["sampled_trace_params"][rng_ids[idx2],neuron_ids[idx2],:,7])))
             distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]
         end
     end

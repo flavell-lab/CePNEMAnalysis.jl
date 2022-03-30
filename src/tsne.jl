@@ -56,8 +56,8 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
 
     distance_matrix = zeros(idx_last, idx_last)
     dataset_ids = fill("", idx_last)
-    rng_ids = zeros(idx_last)
-    neuron_ids = zeros(idx_last)
+    rng_ids = zeros(Int, idx_last)
+    neuron_ids = zeros(Int, idx_last)
 
     deconvolved_activities = zeros(idx_last, n_particles, length(v_range), length(θh_range), length(P_range))
     

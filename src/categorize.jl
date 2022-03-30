@@ -57,7 +57,7 @@ Makes deconvolved lattices for each dataset, time range, and neuron in `fit_resu
 Returns velocity, head angle, and pumping ranges, and the deconvolved activity of each neuron at each lattice point defined by them,
 for both statistically useful ranges (first return value), and full ranges (second return value) designed for plotting consistency.
 """
-function make_deconvolved_lattice(fit_results)
+function make_deconvolved_lattice(fit_results, thresh, plot_thresh)
     deconvolved_activity = Dict()
     v_ranges = Dict()
     θh_ranges = Dict()
@@ -93,9 +93,9 @@ function make_deconvolved_lattice(fit_results)
 
             results = fit_results[dataset]["sampled_trace_params"]
 
-            v_ranges[dataset][rng] = compute_range(v, 25, 1)
-            θh_ranges[dataset][rng] = compute_range(θh, 25, 2)
-            P_ranges[dataset][rng] = compute_range(P, 25, 3)
+            v_ranges[dataset][rng] = compute_range(v, thresh, 1)
+            θh_ranges[dataset][rng] = compute_range(θh, thresh, 2)
+            P_ranges[dataset][rng] = compute_range(P, thresh, 3)
             
             
 

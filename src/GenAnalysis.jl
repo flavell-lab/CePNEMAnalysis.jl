@@ -40,5 +40,6 @@ export
     # tsne.jl
     make_distance_matrix,
     # plot.jl
-    make_deconvolved_heatmap
+    make_deconvolved_heatmap,
+    plot_tsne
 end # module

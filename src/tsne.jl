@@ -94,8 +94,6 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
             distance_matrix[idx1,idx2] += s_weight * abs(median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n1,:,7]))
                     - median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n2,:,7])))
             distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]
-                end
-            end
         end
     end
     return distance_matrix, deconvolved_activities, dataset_ids, rng_ids, neuron_ids, v_range, θh_range, P_range

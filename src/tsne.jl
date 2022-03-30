@@ -80,29 +80,20 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
                 neuron_ids[idx1] = n1
                 deconvolved_activities[idx1,:,:,:,:] .= get_deconvolved_activity(fit_results[dataset]["sampled_trace_params"][rng,n1,:,:], v_range, θh_range, P_range)
             end
-
-            for n1 = 1:fit_results[dataset]["num_neurons"]-1
-                if !(n1 in n_encoding)
-                    continue
-                end
-                idx1 = sum(n_encoding .<= n1) + idx_arr[dataset][rng_idx]
-
-                for n2 = n1+1:fit_results[dataset]["num_neurons"]
-                    if !(n2 in n_encoding)
-                        continue
-                    end
-                    idx2 = sum(n_encoding .<= n2) + idx_arr[dataset][rng_idx]
-
-                    n_cat = neuron_p_vals(deconvolved_activities[idx1,:,:,:,:], deconvolved_activities[idx2,:,:,:,:], compute_p=false)
-                    
-                    distance_matrix[idx1,idx2] = v_weight * sum([sum(n_cat["v_encoding"][i,i+1,:,:]) for i=1:3])
-                    distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_θh_encoding"])
-                    distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_θh_encoding"])
-                    distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_P_encoding"])
-                    distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_P_encoding"])
-                    distance_matrix[idx1,idx2] += s_weight * abs(median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n1,:,7]))
-                            - median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n2,:,7])))
-                    distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]
+        end
+    end
+    for idx1=1:size(distance_matrix,1)-1
+        for idx2=idx1+1:size(distance_matrix,1)
+            n_cat = neuron_p_vals(deconvolved_activities[idx1,:,:,:,:], deconvolved_activities[idx2,:,:,:,:], compute_p=false)
+            
+            distance_matrix[idx1,idx2] = v_weight * sum([sum(n_cat["v_encoding"][i,i+1,:,:]) for i=1:3]) * v_STD / (v_range[4] - v_range[1])
+            distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_θh_encoding"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_θh_encoding"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += s_weight * abs(median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n1,:,7]))
+                    - median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n2,:,7])))
+            distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]
                 end
             end
         end

@@ -13,7 +13,7 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
     fit_results = Dict()
     incomplete_datasets = Dict()
 
-    for dataset=datasets
+    @showprogress for dataset=datasets
         data = import_data(joinpath(path_h5, "$(dataset)-data.h5"))
         if haskey(data, "stim_begin_confocal")
             stim = data["stim_begin_confocal"][1]
@@ -47,7 +47,6 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
                         fit_results[dataset]["log_ml_est"][i,neuron] = read(f, "log_ml_est")
                     end
                 catch e
-    #                 println(e)
                     incomplete_datasets[dataset][i,neuron] = true
                 end
             end

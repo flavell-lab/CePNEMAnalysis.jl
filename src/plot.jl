@@ -75,12 +75,11 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
             color_idx += 1
         end
         n = neuron_ids_tsne[i]
+        is_v = n in neuron_categorization[dataset][rng]["v"]["all"]
+        is_θh = n in neuron_categorization[dataset][rng]["θh"]["all"]
+        is_P = n in neuron_categorization[dataset][rng]["P"]["all"]
 
         if length(vars_plot) > 0
-            is_v = n in neuron_categorization[dataset][rng]["v"]["all"]
-            is_θh = n in neuron_categorization[dataset][rng]["θh"]["all"]
-            is_P = n in neuron_categorization[dataset][rng]["P"]["all"]
-
             c = nothing
             is_multiplex = (is_v && 1 in vars_plot) + (is_θh && 2 in vars_plot) + (is_P && 3 in vars_plot) > 1
 

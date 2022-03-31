@@ -165,3 +165,20 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
     end
     Plots.plot!(framestyle=:box, size=(600,600))
 end
+
+"""
+Plots histogram of tau (half-decay) times for all encoding neurons.
+"""
+function plot_tau_histogram(fit_results, neuron_categorization)
+    s_vals = []
+    for dataset in keys(fit_results)
+        for rng in 1:length(fit_results[dataset]["ranges"])
+            append!(s_vals, dropdims(median(fit_results[dataset]["sampled_tau_vals"][rng,neuron_categorization[dataset][rng]["all"],:], dims=2), dims=2))
+        end
+    end
+    Plots.histogram(s_vals, normalize=true, bins=0:1:15, label=nothing, color="gray")
+    xlabel!("half decay (s)")
+    ylabel!("fraction of encoding neurons")
+end
+
+# function plot_neuron()

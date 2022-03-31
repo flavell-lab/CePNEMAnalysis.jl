@@ -42,5 +42,6 @@ export
     compute_tsne,
     # plot.jl
     make_deconvolved_heatmap,
-    plot_tsne
+    plot_tsne,
+    plot_tau_histogram
 end # module

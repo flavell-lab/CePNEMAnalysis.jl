@@ -22,7 +22,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     v_range = [-Inf,0,0,Inf]
     θh_range = [-Inf,Inf]
     P_range = [-Inf,Inf]
-    for (i, dataset) = enumerate(datasets)
+    @showprogress for (i, dataset) = enumerate(datasets)
         rng_use = []
         rng_qual = []
         for (j,rng) = enumerate(fit_results[dataset]["ranges"])
@@ -109,18 +109,20 @@ Runs t-SNE algorithm on `distance_matrix`, returns solution with lowest KL-diver
 - `n_iters`: Number of iterations to run per t-SNE algorithm
 """
 function compute_tsne(distance_matrix, n_tsne, perplexities, n_iters)
-    kl_best = Inf
-    perplexity_best = nothing
-    tsne_best = nothing
-    @showprogress for iter = 1:n_tsne
-        for perplexity in perplexities
+    all_kl_best = []
+    all_tsne_best = []
+    for perplexity in perplexities
+        kl_best = Inf
+        tsne_best = nothing
+        for iter = 1:n_tsne
             tsne_dist, beta, kl = tsne(distance_matrix, 2, 0, n_iters, perplexity, verbose=false, distance=true, extended_output=true);
             if kl < kl_best
                 kl_best = kl
                 tsne_best = tsne_dist
-                perplexity_best = perplexity
             end
         end
+        push!(all_kl_best, kl_best)
+        push!(all_tsne_best, tsne_best)
     end
-    return tsne_best, perplexity_best, kl_best
+    return all_tsne_best, all_kl_best
 end

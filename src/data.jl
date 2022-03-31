@@ -34,7 +34,9 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
         fit_results[dataset]["trace_scores"] = zeros(length(ranges), n_neurons, n_particles)
         fit_results[dataset]["sampled_trace_params"] = zeros(length(ranges), n_neurons, n_samples, n_params)
         fit_results[dataset]["log_ml_est"] = zeros(length(ranges), n_neurons)
-        
+        fit_results[dataset]["sampled_tau_vals"] = zeros(length(ranges), n_neurons, n_samples)
+        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][1600] - data["timestamp_confocal"][801]) / (1598)
+
         incomplete_datasets[dataset] = zeros(Bool, length(ranges), n_neurons)
         for (i,rng)=enumerate(ranges)
             for neuron = 1:n_neurons
@@ -45,6 +47,8 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
                         fit_results[dataset]["trace_scores"][i,neuron,:] .= read(f, "trace_scores")
                         fit_results[dataset]["sampled_trace_params"][i,neuron,:,:] .= read(f, "sampled_trace_params")
                         fit_results[dataset]["log_ml_est"][i,neuron] = read(f, "log_ml_est")
+                        s = compute_s.(fit_results[dataset]["sampled_trace_params"][i,neuron,:,7])
+                        fit_results[dataset]["sampled_tau_vals"][i,neuron] = log.(s ./ (s .+ 1), 0.5) * fit_results[dataset]["avg_timestep"]
                     end
                 catch e
                     incomplete_datasets[dataset][i,neuron] = true
@@ -54,4 +58,3 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
     end
     return fit_results, incomplete_datasets
 end
-

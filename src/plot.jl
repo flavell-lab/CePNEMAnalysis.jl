@@ -39,7 +39,7 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 - `neuron_ids_tsne`: Neuron of each row in `tsne_dist`
 - `neuron_categorization`: Categorization of each neuron
 - `vars_plot`: List of which variables to plot colors of.
-    1 = velocity, 2 = head angle, 3 = pumping. If empty, plots datasets and ranges in different colors.
+    1 = velocity, 2 = head angle, 3 = pumping. If empty, plots datasets and ranges in different colors. If `[4]`, plot EWMA
 - `label_v_shapes` (optional, default `false`): If set, plot different velocity neurons with different shapes.
 - `label_neurons` (optional, default `false`): If set, label each point in the plot with the neuron ID.
 - `plot_axes` (optional, default `false`): If set, plot the numerical values of the axes.
@@ -51,14 +51,16 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 - `shapes` (optional, default `[:circle, :rtriangle, :ltriangle, :ldiamond]`): The shapes of non-velocity, forward, reversal, and unknown/other velocity neurons.
     If `label_v_shapes` is false, only the first element matters.
 - `sizes` (optiona, default `[9,14,14,12]`): The marker sizes. If `label_v_shapes` is false, only the first element matters.
+- `s_rng`: Range of `s` values to consider.
+- `s_res`: Resolution of different `s` values.
 """
 function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
         velocity_colors=[RGB.(0,0.9,1), RGB.(0.5,0.6,1), RGB.(0,0,1)], θh_colors=[RGB.(1,0.7,0.3), RGB.(1,0.3,0.7), RGB.(0.7,0,0)], P_colors=[RGB.(0,1,0), RGB.(0.7,1,0), RGB.(0,0.5,0)], 
-        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :ldiamond], sizes=[9,14,14,12])
+        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[9,14,14,12], s_rng=[0,10], s_res=100)
     if label_v_shapes
         @assert(!isnothing(neuron_categorization), "Neuron categories must exist to label velocity with shapes.")
     end
-    if length(vars_plot) > 0
+    if length(vars_plot) > 0 && !(4 in vars_plot)
         colors = [velocity_colors, θh_colors, P_colors]
     end
 
@@ -79,7 +81,7 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
         is_θh = n in neuron_categorization[dataset][rng]["θh"]["all"]
         is_P = n in neuron_categorization[dataset][rng]["P"]["all"]
 
-        if length(vars_plot) > 0
+        if length(vars_plot) > 0 && !(4 in vars_plot)
             c = nothing
             is_multiplex = (is_v && 1 in vars_plot) + (is_θh && 2 in vars_plot) + (is_P && 3 in vars_plot) > 1
 
@@ -128,6 +130,10 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
             else
                 c = c_nonencoding
             end
+        elseif 4 in vars_plot
+            s = median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n,:,7]))
+            s_idx = min(s_res, Int(round(s_res*(s-s_rng[1]) / (s_rng[end]-s_rng[1]))))
+            c = palette(:thermal, s_res+1)[s_idx+1]
         else
             c = palette(:default)[color_idx]
         end

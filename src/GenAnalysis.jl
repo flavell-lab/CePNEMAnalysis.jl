@@ -39,6 +39,7 @@ export
     detect_encoding_changes,
     # tsne.jl
     make_distance_matrix,
+    compute_tsne,
     # plot.jl
     make_deconvolved_heatmap,
     plot_tsne

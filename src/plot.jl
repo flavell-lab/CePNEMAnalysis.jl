@@ -56,7 +56,7 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 """
 function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
         velocity_colors=[RGB.(0,0.9,1), RGB.(0.5,0.6,1), RGB.(0,0,1)], θh_colors=[RGB.(1,0.7,0.3), RGB.(1,0.3,0.7), RGB.(0.7,0,0)], P_colors=[RGB.(0,1,0), RGB.(0.7,1,0), RGB.(0,0.5,0)], 
-        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[9,14,14,12], s_rng=[0,10], s_res=100)
+        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[9,14,14,12], s_rng=[0,7], s_res=100)
     if label_v_shapes
         @assert(!isnothing(neuron_categorization), "Neuron categories must exist to label velocity with shapes.")
     end
@@ -131,7 +131,7 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
                 c = c_nonencoding
             end
         elseif 4 in vars_plot
-            s = median(compute_s.(fit_results[dataset]["sampled_trace_params"][rng,n,:,7]))
+            s = fit_results[dataset]["sampled_tau_vals"][rng,n]
             s_idx = min(s_res, Int(round(s_res*(s-s_rng[1]) / (s_rng[end]-s_rng[1]))))
             c = palette(:thermal, s_res+1)[s_idx+1]
         else

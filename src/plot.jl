@@ -131,7 +131,7 @@ function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne,
                 c = c_nonencoding
             end
         elseif 4 in vars_plot
-            s = fit_results[dataset]["sampled_tau_vals"][rng,n]
+            s = median(fit_results[dataset]["sampled_tau_vals"][rng,n,:])
             s_idx = min(s_res, Int(round(s_res*(s-s_rng[1]) / (s_rng[end]-s_rng[1]))))
             c = palette(:thermal, s_res+1)[s_idx+1]
         else

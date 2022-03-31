@@ -92,7 +92,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
             distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
             distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
             distance_matrix[idx1,idx2] += s_weight * abs(median(fit_results[dataset_ids[idx1]]["sampled_tau_vals"][rng_ids[idx1],neuron_ids[idx1],:])
-                    - median(fit_results[dataset_idx[idx2]]["sampled_tau_vals"][rng_ids[idx2],neuron_ids[idx2],:]))
+                    - median(fit_results[dataset_ids[idx2]]["sampled_tau_vals"][rng_ids[idx2],neuron_ids[idx2],:]))
             distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]
         end
     end

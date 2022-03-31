@@ -22,7 +22,7 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
             fit_ranges = data["fit_ranges"]
             ranges = []
             for i in 1:length(fit_ranges)-1
-                push!(ranges, fit_ranges[i]:fit_ranges[i+1])
+                push!(ranges, fit_ranges[i]+1:fit_ranges[i+1])
             end
         else
             ranges = [1:400, 401:800, 801:1200, 1201:1600]

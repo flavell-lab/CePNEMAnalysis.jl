@@ -54,9 +54,9 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 - `s_rng`: Range of `s` values to consider.
 - `s_res`: Resolution of different `s` values.
 """
-function plot_tsne(tsne_dist, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
+function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
         velocity_colors=[RGB.(0,0.9,1), RGB.(0.5,0.6,1), RGB.(0,0,1)], θh_colors=[RGB.(1,0.7,0.3), RGB.(1,0.3,0.7), RGB.(0.7,0,0)], P_colors=[RGB.(0,1,0), RGB.(0.7,1,0), RGB.(0,0.5,0)], 
-        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[9,14,14,12], s_rng=[0,7], s_res=100)
+        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[6,10,10,8], s_rng=[0,7], s_res=100)
     if label_v_shapes
         @assert(!isnothing(neuron_categorization), "Neuron categories must exist to label velocity with shapes.")
     end
@@ -181,4 +181,55 @@ function plot_tau_histogram(fit_results, neuron_categorization)
     ylabel!("fraction of encoding neurons")
 end
 
-# function plot_neuron()
+
+function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot_fit_idx=nothing, plot_rev=false, plot_stim=false, plot_size=(700,350), y_rng=(-1.5,3.5))
+    max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] : 1600
+    rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
+    
+    avg_timestep = fit_results[dataset]["avg_timestep"]
+    
+    trace = fit_results[dataset]["trace_array"][neuron,rng_fit]
+    all_rev = [t - rng_fit[1] + 1 for t in rng_fit if fit_results[dataset]["v"][t] < 0]
+    Plots.plot()
+    if plot_rev
+        Plots.vline(avg_timestep .* all_rev, opacity=0.4, color=palette(:default)[2], label=nothing)
+    end
+    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=2, color=palette(:default)[1], size=plot_size)
+    
+    tr1 = nothing
+    tr2 = nothing
+    if plot_fit_idx == :mle
+        mle_est = deepcopy(fit_results[dataset]["trace_params"][rng, neuron, argmax(fit_results[dataset]["trace_scores"][rng, neuron, :]), :])
+        mle_est[9] = -50
+        tr1 = mle_est
+        
+        cmap = Gen.choicemap()
+        update_cmap!(cmap, mle_est, nothing)
+
+        (tr, _) = Gen.generate(unfold_nl7b, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
+        fit = [tr[:chain => t => :y] for t=1:max_t]
+        Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+    elseif !isnothing(plot_fit_idx)
+        for idx in plot_fit_idx
+            params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng, neuron, idx, :])
+            params[9] = -100
+            
+            tr2 = params
+
+            cmap = Gen.choicemap()
+            update_cmap!(cmap, params, nothing)
+
+            (tr, _) = Gen.generate(unfold_nl7b, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
+            fit = [tr[:chain => t => :y] for t=1:max_t]
+            Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+        end
+    end
+    
+    if plot_stim
+        stim = fit_results[dataset]["ranges"][1][end]+1
+        vline!([stim * avg_timestep], linewidth=3, label=nothing, color="red")
+    end
+    xlabel!("time (min)")
+    ylabel!("neuron activity")
+    yaxis!(y_rng)
+end

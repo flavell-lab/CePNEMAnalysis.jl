@@ -43,5 +43,6 @@ export
     # plot.jl
     make_deconvolved_heatmap,
     plot_tsne,
-    plot_tau_histogram
+    plot_tau_histogram,
+    plot_neuron
 end # module

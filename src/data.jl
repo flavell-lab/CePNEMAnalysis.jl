@@ -55,7 +55,7 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
                         fit_results[dataset]["sampled_trace_params"][i,neuron,:,:] .= read(f, "sampled_trace_params")
                         fit_results[dataset]["log_ml_est"][i,neuron] = read(f, "log_ml_est")
                         s = compute_s.(fit_results[dataset]["sampled_trace_params"][i,neuron,:,7])
-                        fit_results[dataset]["sampled_tau_vals"][i,neuron] = log.(s ./ (s .+ 1), 0.5) * fit_results[dataset]["avg_timestep"]
+                        fit_results[dataset]["sampled_tau_vals"][i,neuron] = log.(s ./ (s .+ 1), 0.5) .* fit_results[dataset]["avg_timestep"]
                     end
                 catch e
                     incomplete_datasets[dataset][i,neuron] = true

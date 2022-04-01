@@ -183,7 +183,7 @@ end
 
 
 function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot_fit_idx=nothing, plot_rev=false, plot_stim=false, plot_size=(700,350), y_rng=(-1.5,3.5))
-    max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] : 1600
+    max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : 1600
     rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
     
     avg_timestep = fit_results[dataset]["avg_timestep"]

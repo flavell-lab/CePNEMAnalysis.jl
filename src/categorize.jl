@@ -474,7 +474,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         if length(P_ranges_valid) == 0
             @warn("Dataset $(dataset) has no time ranges with valid pumping information")
             neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=1:4], BenjaminiHochberg()) .< p) > 0]
-            n_neurons_fit_all += neurons_fit
+            n_neurons_fit_all += length(neurons_fit)
             continue
         end
         n_neurons_valid += fit_results[dataset]["num_neurons"]

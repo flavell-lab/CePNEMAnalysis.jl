@@ -29,7 +29,7 @@ export
     overlap_index,
     prob_P_greater_Q,
     # categorize.jl
-    deconvolved_model_nl7b,
+    deconvolved_model_nl8,
     compute_range,
     get_deconvolved_activity,
     make_deconvolved_lattice,
@@ -37,6 +37,7 @@ export
     categorize_neurons,
     categorize_all_neurons,
     detect_encoding_changes,
+    get_enc_stats,
     # tsne.jl
     make_distance_matrix,
     compute_tsne,

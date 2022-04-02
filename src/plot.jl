@@ -186,7 +186,7 @@ function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot
     max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : 1600
     rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
     
-    avg_timestep = fit_results[dataset]["avg_timestep"]
+    avg_timestep = fit_results[dataset]["avg_timestep"] / 60
     
     trace = fit_results[dataset]["trace_array"][neuron,rng_fit]
     all_rev = [t - rng_fit[1] + 1 for t in rng_fit if fit_results[dataset]["v"][t] < 0]
@@ -206,7 +206,7 @@ function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot
         cmap = Gen.choicemap()
         update_cmap!(cmap, mle_est, nothing)
 
-        (tr, _) = Gen.generate(unfold_nl7b, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
+        (tr, _) = Gen.generate(unfold_nl8, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
         fit = [tr[:chain => t => :y] for t=1:max_t]
         Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
     elseif !isnothing(plot_fit_idx)
@@ -219,7 +219,7 @@ function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot
             cmap = Gen.choicemap()
             update_cmap!(cmap, params, nothing)
 
-            (tr, _) = Gen.generate(unfold_nl7b, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
+            (tr, _) = Gen.generate(unfold_nl8, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
             fit = [tr[:chain => t => :y] for t=1:max_t]
             Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
         end

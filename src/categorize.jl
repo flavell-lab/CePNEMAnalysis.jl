@@ -1,7 +1,7 @@
 """
-Evaluate model NL7b, deconvolved, given `params` and `v`, `θh`, and `P`. Does not use the sigmoid.
+Evaluate model NL8, deconvolved, given `params` and `v`, `θh`, and `P`. Does not use the sigmoid.
 """
-function deconvolved_model_nl7b(params::Vector{Float64}, v::Float64, θh::Float64, P::Float64)
+function deconvolved_model_nl8(params::Vector{Float64}, v::Float64, θh::Float64, P::Float64)
     return ((params[1]+1)/sqrt(params[1]^2+1) - 2*params[1]/sqrt(params[1]^2+1)*(v/v_STD < 0)) * (
         params[2] * (v/v_STD) + params[3] * (θh/θh_STD) + params[4] * (P/P_STD) + params[5]) + params[8]
 end
@@ -32,7 +32,7 @@ function compute_range(beh::Vector{Float64}, thresh::Real, beh_idx::Int)
 end
 
 """
-Computes deconvolved activity of model NL7b for each sampled parameter in `sampled_trace_params`,
+Computes deconvolved activity of model NL8 for each sampled parameter in `sampled_trace_params`,
 at a lattice defined by `v_rng`, `θh_rng`, and `P_rng`.
 """
 function get_deconvolved_activity(sampled_trace_params, v_rng, θh_rng, P_rng)
@@ -42,7 +42,7 @@ function get_deconvolved_activity(sampled_trace_params, v_rng, θh_rng, P_rng)
         for (i,v_) in enumerate(v_rng)
             for (j,θh_) in enumerate(θh_rng)
                 for (k,P_) in enumerate(P_rng)
-                    deconvolved_activity[x,i,j,k] = deconvolved_model_nl7b(sampled_trace_params[x,:],v_,θh_,P_)
+                    deconvolved_activity[x,i,j,k] = deconvolved_model_nl8(sampled_trace_params[x,:],v_,θh_,P_)
                 end
             end
         end
@@ -461,3 +461,58 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
     end
     return encoding_changes, encoding_change_p_vals
 end
+
+function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05)
+    n_neurons_tot = 0
+    n_neurons_fit = 0
+    n_neurons_beh = [0,0,0]
+    n_neurons_npred = [0,0,0,0]
+    for dataset in keys(fit_results)
+        n_r = length(fit_results[dataset]["ranges"])
+        P_ranges_valid = [r for r=1:n_r if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
+        if length(P_ranges_valid) == 0
+            @warn("Dataset $(dataset) has no time ranges with valid pumping information")
+            continue
+        end
+        n_neurons_tot += fit_results[dataset]["num_neurons"]
+        for n=1:fit_results[dataset]["num_neurons"]
+            max_npred = 0
+
+            v_p = adjust([neuron_p[dataset][r]["v"][n] for r=1:n_r], BenjaminiHochberg())
+            θh_p = adjust([neuron_p[dataset][r]["θh"][n] for r=1:n_r], BenjaminiHochberg())
+            P_p_valid = adjust([neuron_p[dataset][r]["P"][n] for r=P_ranges_valid], BenjaminiHochberg())
+            P_p = []
+            idx=1
+            for r=1:4
+                if r in P_ranges_valid
+                    push!(P_p, P_p_valid[idx])
+                    idx += 1
+                else
+                    push!(P_p, 1.0)
+                end
+            end
+            if any(v_p .< p)
+                n_neurons_beh[1] += 1
+            end
+            if any(θh_p .< p)
+                n_neurons_beh[2] += 1
+            end
+            if any(P_p .< p)
+                n_neurons_beh[3] += 1   
+            end
+            
+            for r=1:4
+                v_enc = v_p[r] .< p
+                θh_enc = θh_p[r] .< p
+                P_enc = P_p[r] .< p
+                max_npred = max(max_npred, v_enc + θh_enc + P_enc)
+            end
+            n_neurons_npred[max_npred+1] += 1
+        end
+            
+        neurons_fit = [n for n in 1:n_neurons_tot if any([n in neuron_categorization[dataset][i]["all"] for i=1:4])]
+        n_neurons_fit += length(neurons_fit)
+    end
+    return n_neurons_beh, n_neurons_npred, n_neurons_fit, n_neurons_tot
+end
+

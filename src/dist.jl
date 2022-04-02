@@ -22,14 +22,14 @@ function update_cmap!(cmap, x, y)
 end
 
 """
-Given parameters `x` (given as an array of the 9 parameters for `nl7b`), observed data `y_cmap`
+Given parameters `x` (given as an array of the 9 parameters for `nl8`), observed data `y_cmap`
 (neural data, given as a `choicemap)`, `args` (behavioral data),
-and `log_ml_est` from a Gen inference run on `y, args`, computes `P(x | y, args)` under model `nl7b`.
+and `log_ml_est` from a Gen inference run on `y, args`, computes `P(x | y, args)` under model `nl8`.
 Updates `y_cmap` to contain `x` values as well.
 """
 function evaluate_pdf_xgiveny!(x, y_cmap, args, log_ml_est)
     update_cmap!(y_cmap, x, nothing)
-    return exp(BigFloat(Gen.assess(unfold_nl7b, args, y_cmap)[1] - log_ml_est))
+    return exp(BigFloat(Gen.assess(unfold_nl8, args, y_cmap)[1] - log_ml_est))
 end
 
 """

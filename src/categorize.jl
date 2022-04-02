@@ -326,9 +326,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["θh"]["rect_rev_ventral"] .= rev_θh_ventral
     corrected_p_vals["θh"]["rect_rev_dorsal"] .= rev_θh_dorsal
     # use Bonferroni correction since these are expected to be anticorrelated
-    corrected_p_vals["θh"]["dorsal"] .= θh_dorsal .* 2
-    corrected_p_vals["θh"]["ventral"] .= θh_ventral .* 2
-    corrected_p_vals["θh"]["all"] .= θh_all .* 4
+    corrected_p_vals["θh"]["dorsal"] .= min.(θh_dorsal .* 2, 1.)
+    corrected_p_vals["θh"]["ventral"] .= min.(θh_ventral .* 2, 1.)
+    corrected_p_vals["θh"]["all"] .= min.(θh_all .* 4, 1.)
     
     
     fwd_P_act = adjust([neuron_cats[n]["fwd_P_encoding"] for n in 1:max_n], BenjaminiHochberg())
@@ -356,9 +356,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["rect_rev_inh"] .= rev_P_inh
     corrected_p_vals["P"]["rect_rev_act"] .= rev_P_act
     # use Bonferroni correction since these are expected to be anticorrelated
-    corrected_p_vals["P"]["act"] .= P_act .* 2
-    corrected_p_vals["P"]["inh"] .= P_inh .* 2
-    corrected_p_vals["P"]["all"] .= P_all .* 4
+    corrected_p_vals["P"]["act"] .= min.(P_act .* 2, 1.)
+    corrected_p_vals["P"]["inh"] .= min.(P_inh .* 2, 1.)
+    corrected_p_vals["P"]["all"] .= min.(P_all .* 4, 1.)
     
     corrected_p_vals["all"] .= p_vals_all
     

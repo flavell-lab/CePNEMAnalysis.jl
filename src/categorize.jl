@@ -478,9 +478,9 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         for n=1:fit_results[dataset]["num_neurons"]
             max_npred = 0
 
-            v_p = adjust([neuron_p[dataset][r]["v"][n] for r=1:n_r], BenjaminiHochberg())
-            θh_p = adjust([neuron_p[dataset][r]["θh"][n] for r=1:n_r], BenjaminiHochberg())
-            P_p_valid = adjust([neuron_p[dataset][r]["P"][n] for r=P_ranges_valid], BenjaminiHochberg())
+            v_p = adjust([neuron_p[dataset][r]["v"]["all"][n] for r=1:n_r], BenjaminiHochberg())
+            θh_p = adjust([neuron_p[dataset][r]["θh"]["all"][n] for r=1:n_r], BenjaminiHochberg())
+            P_p_valid = adjust([neuron_p[dataset][r]["P"]["all"][n] for r=P_ranges_valid], BenjaminiHochberg())
             P_p = []
             idx=1
             for r=1:4
@@ -502,10 +502,8 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             end
             
             for r=1:4
-                v_enc = v_p[r] .< p
-                θh_enc = θh_p[r] .< p
-                P_enc = P_p[r] .< p
-                max_npred = max(max_npred, v_enc + θh_enc + P_enc)
+                enc = adjust([v_p[r], θh_p[r], P_p[r]], BenjaminiHochberg())
+                max_npred = max(max_npred, sum(enc .< p))
             end
             n_neurons_npred[max_npred+1] += 1
         end

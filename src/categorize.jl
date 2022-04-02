@@ -462,19 +462,22 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
     return encoding_changes, encoding_change_p_vals
 end
 
-function get_enc_stats(fit_results, neuron_p, neuron_categorization, P_ranges; P_diff_thresh=0.5, p=0.05)
-    n_neurons_tot = 0
-    n_neurons_fit = 0
+function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05)
+    n_neurons_tot_all = 0
+    n_neurons_fit_all = 0
     n_neurons_beh = [0,0,0]
     n_neurons_npred = [0,0,0,0]
     for dataset in keys(fit_results)
         n_r = length(fit_results[dataset]["ranges"])
         P_ranges_valid = [r for r=1:n_r if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
+        n_neurons_tot_all += fit_results[dataset]["num_neurons"]
         if length(P_ranges_valid) == 0
             @warn("Dataset $(dataset) has no time ranges with valid pumping information")
+            neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=1:4], BenjaminiHochberg()) .< p) > 0]
+            n_neurons_fit_all += neurons_fit
             continue
         end
-        n_neurons_tot += fit_results[dataset]["num_neurons"]
+        n_neurons_valid += fit_results[dataset]["num_neurons"]
         for n=1:fit_results[dataset]["num_neurons"]
             max_npred = 0
 
@@ -507,10 +510,7 @@ function get_enc_stats(fit_results, neuron_p, neuron_categorization, P_ranges; P
             end
             n_neurons_npred[max_npred+1] += 1
         end
-            
-        neurons_fit = [n for n in 1:n_neurons_tot if any([n in neuron_categorization[dataset][i]["all"] for i=1:4])]
-        n_neurons_fit += length(neurons_fit)
     end
-    return n_neurons_beh, n_neurons_npred, n_neurons_fit, n_neurons_tot
+    return n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
 end
 

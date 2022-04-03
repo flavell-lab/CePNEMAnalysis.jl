@@ -366,7 +366,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
 end
 
 """
-Categorizes all neurons in all datasets at all time ranges.
+Categorizes all neurons in all datasets at all time ranges. Returns the neuron categorization, the p-values for it,
+and the raw (not multiple-hypothesis corrected) p-values.
 
 # Arguments:
 - `fit_results`: Gen fit results.

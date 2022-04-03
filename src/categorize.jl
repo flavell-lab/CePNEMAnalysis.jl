@@ -362,7 +362,7 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     
     corrected_p_vals["all"] .= p_vals_all
     
-    return categories, corrected_p_vals
+    return categories, corrected_p_vals, neuron_cats
 end
 
 """
@@ -377,18 +377,21 @@ Categorizes all neurons in all datasets at all time ranges.
 function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is_ventral)
     neuron_categorization = Dict()
     neuron_p_vals = Dict()
+    neuron_cats = Dict()
     @showprogress for dataset = keys(deconvolved_activity)
         neuron_categorization[dataset] = Dict()
         neuron_p_vals[dataset] = Dict()
+        neuron_cats[dataset] = Dict()
         for rng = 1:length(fit_results[dataset]["ranges"])
             empty_cat = Dict()
+            neuron_cats[rng] = Dict()
             for n = 1:fit_results[dataset]["num_neurons"]
                 empty_cat[n] = zeros(size(deconvolved_activity[dataset][rng][n]))
             end
-            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset])
+            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset])
         end
     end
-    return neuron_categorization, neuron_p_vals
+    return neuron_categorization, neuron_p_vals, neuron_cats
 end
 
 """

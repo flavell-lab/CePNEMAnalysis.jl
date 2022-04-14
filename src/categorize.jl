@@ -466,6 +466,7 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
     return encoding_changes, encoding_change_p_vals
 end
 
+# TODO: update this to also get encoding change statistics
 function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05)
     n_neurons_tot_all = 0
     n_neurons_fit_all = 0

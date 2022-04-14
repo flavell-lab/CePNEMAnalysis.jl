@@ -1,3 +1,7 @@
+"""
+Makes a matrix of deconvolved neuron activity values from boundary points `deconvolved_activity` for either velocity and head angle (`axis=2`)
+    or velocity and pumping (`axis=3`), compatible with making into a heatmap.
+"""
 function make_deconvolved_heatmap(deconvolved_activity, axis; res=200)
     @assert(res % 2 == 0)
     all_hmap = zeros(size(deconvolved_activity,1),res, res)
@@ -27,6 +31,45 @@ function make_deconvolved_heatmap(deconvolved_activity, axis; res=200)
         end
     end
     return all_hmap
+end
+
+"""
+Plots a deconvolved heatmap of the median particle.
+
+# Arguments:
+- `deconvolved_activity`: Deconvolved neural activity
+- `v_ranges_plot`: Ranges to plot velocity
+- `θh_ranges_plot`: Ranges to plot head angle
+- `P_ranges_plot`: Ranges to plot pumping
+- `axis`: Set to 1 for velocity only (plots velocity vs head angle in blue), 2 for head angle (velocity vs head angle in red), and 3 for pumping (velocity vs pumping in green)
+- `res` (optional, default 200): Resolution of the plot
+"""
+function plot_deconvolved_heatmap(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200)
+    if axis == 1
+        heatmap(v_rng, θh_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], 2, res=len), dims=1), dims=1)), c=cgrad([:black, :blue, :cyan]), clim=(-1,3))
+    elseif axis == 2
+        heatmap(v_rng, θh_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :red, :magenta]), clim=(-1,3))
+    elseif axis == 3
+        heatmap(v_rng, P_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :green, :turquoise]), clim=(-1,3))
+    end
+    xlabel!("velocity")
+    if axis == 2
+        ylabel!("head angle")
+    else
+        ylabel!("feeding")
+    end
+    Plots.plot!()
+end
+
+# TODO: finish this function
+function plot_deconvolved_neural_activity(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200, pos_θh=[100], pos_P=[100])
+    if axis == 1
+        dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], 2, res=len), dims=1), dims=1)), c=cgrad([:black, :blue, :cyan]), clim=(-1,3))
+    elseif axis == 2
+        heatmap(v_rng, θh_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :red, :magenta]), clim=(-1,3))
+    elseif axis == 3
+        heatmap(v_rng, P_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :green, :turquoise]), clim=(-1,3))
+    end
 end
 
 """
@@ -169,20 +212,39 @@ end
 """
 Plots histogram of tau (half-decay) times for all encoding neurons.
 """
-function plot_tau_histogram(fit_results, neuron_categorization)
+function plot_tau_histogram(fit_results, neuron_categorization, bin_max=15)
     s_vals = []
     for dataset in keys(fit_results)
         for rng in 1:length(fit_results[dataset]["ranges"])
             append!(s_vals, dropdims(median(fit_results[dataset]["sampled_tau_vals"][rng,neuron_categorization[dataset][rng]["all"],:], dims=2), dims=2))
         end
     end
-    Plots.histogram(s_vals, normalize=true, bins=0:1:15, label=nothing, color="gray")
+    Plots.histogram(s_vals, normalize=true, bins=0:1:bin_max, label=nothing, color="gray")
     xlabel!("half decay (s)")
     ylabel!("fraction of encoding neurons")
 end
 
+"""
+Plots a neuron and model fits to that neuron.
 
-function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot_fit_idx=nothing, plot_rev=false, plot_stim=false, plot_size=(700,350), y_rng=(-1.5,3.5))
+# Arguments:
+- `fit_results`: Dictionary of all model fit results.
+- `dataset`: Dataset corresponding to the neuron
+- `rng`: Range where the neuron was fit
+- `neuron`: Neuron
+- `plot_rng_only` (optional, default `true`): Plot only the range of the fit (vs the entire time range)
+- `plot_fit_idx` (optional, default `nothing`): Plot a Gen fit to the neuron.
+    - If set to an array of numbers, plot the particles with indices in that array.
+    - If set to `:mle`, plot the maximum-likelihood particle
+- `use_heatmap` (optional, default `false`): If `plot_fit_idx` is an array, plot the fits as a heatmap instead of as lines.
+- `heatmap_hist_step` (optional, default `0.01`): Histogram `y`-step
+- `plot_rev` (optional, default `false`): Plot reversal events.
+- `plot_stim` (optional, default `false`): Plot the heat stim.
+- `plot_size` (optional, default `(700,350)`): Size of the plot
+- `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
+"""
+function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
+        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5))
     max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : 1600
     rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
     
@@ -194,37 +256,43 @@ function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot
     if plot_rev
         Plots.vline(avg_timestep .* all_rev, opacity=0.4, color=palette(:default)[2], label=nothing)
     end
-    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=2, color=palette(:default)[1], size=plot_size)
     
     tr1 = nothing
     tr2 = nothing
     if plot_fit_idx == :mle
-        mle_est = deepcopy(fit_results[dataset]["trace_params"][rng, neuron, argmax(fit_results[dataset]["trace_scores"][rng, neuron, :]), :])
-        mle_est[9] = -50
-        tr1 = mle_est
-        
-        cmap = Gen.choicemap()
-        update_cmap!(cmap, mle_est, nothing)
-
-        (tr, _) = Gen.generate(unfold_nl8, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
-        fit = [tr[:chain => t => :y] for t=1:max_t]
+        mle_est = fit_results[dataset]["trace_params"][rng, neuron, argmax(fit_results[dataset]["trace_scores"][rng, neuron, :]), 1:8]
+        fit = model_nl8(max_t, mle_est..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
         Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
     elseif !isnothing(plot_fit_idx)
-        for idx in plot_fit_idx
-            params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng, neuron, idx, :])
-            params[9] = -100
-            
-            tr2 = params
+        if use_heatmap
+            y_min = y_rng[1]
+            y_max = y_rng[2]
+            y_fit_array = zeros(max_t, length(plot_fit_idx))
 
-            cmap = Gen.choicemap()
-            update_cmap!(cmap, params, nothing)
-
-            (tr, _) = Gen.generate(unfold_nl8, (max_t, fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit]), cmap)
-            fit = [tr[:chain => t => :y] for t=1:max_t]
-            Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+            for i = plot_fit_idx
+                ps = fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8]
+        
+                fit = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+                y_fit_array[t, :] .= fit
+            end
+            y_bins = y_min:heatmap_hist_step:y_max
+            y_hist_array = zeros(max_t, length(y_bins) - 1)
+            for t = 1:max_t
+                hist_fit = fit(Histogram, y_fit_array[t,:],  y_bins)
+                y_hist_array[t,:] = hist_fit.weights
+            end
+            heatmap!(avg_timestep .* (rng_fit .- rng_fit[1]), y_bins[1:end-1] .+ 0.005, y_hist_array', c=cgrad([:white, plot_rev ? palette(:default)[3] : palette(:default)[2], :black]), colorbar=nothing, left_margin=5mm)
+        else
+            for idx in plot_fit_idx
+                params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng, neuron, idx, 1:8])
+                fit = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+                Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+            end
         end
     end
     
+    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=2, color=palette(:default)[1], size=plot_size)
+
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1
         vline!([stim * avg_timestep], linewidth=3, label=nothing, color="red")
@@ -233,3 +301,41 @@ function plot_neuron(fit_results, dataset, rng, neuron; plot_rng_only=true, plot
     ylabel!("neuron activity")
     yaxis!(y_rng)
 end
+
+"""
+Plots the heatmap of the projection of posterior particles of a neuron into a 2D susbspace.
+
+# Arguments:
+- `fit_results`: Dictionary of Gen fit results.
+- `dataset`: Dataset containing the neuron.
+- `rng`: Range where the neuron was fit.
+- `neuron`: Neuron
+- `param1`: First parameter to plot (as an index 1 through 9)
+- `param2`: Second parameter to plot (as an index 1 through 9)
+- `init` (optional, default `true`): Initialize a new plot, rather than overlaying on top of a preexisting plot
+- `color`: Color of the heatmap
+"""
+function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2])
+    if init
+        Plots.plot()
+    end
+    c11 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param1]
+    if param1 == 7
+        c11 = compute_s(c11)
+    elseif param1 == 9
+        c11 = compute_σ(c11)
+    end
+
+    c12 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param2]    
+    if param2 == 7
+        c12 = compute_s(c12)
+    elseif param2 == 9
+        c12 = compute_σ(c12)
+    end
+
+    hist_fit = fit(Histogram, (c11,c12), (-3:0.1:3, -2:0.05:1))
+    Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
+end
+
+
+

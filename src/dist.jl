@@ -29,7 +29,7 @@ Updates `y_cmap` to contain `x` values as well.
 """
 function evaluate_pdf_xgiveny!(x, y_cmap, args, log_ml_est)
     update_cmap!(y_cmap, x, nothing)
-    return exp(BigFloat(Gen.assess(unfold_nl8, args, y_cmap)[1] - log_ml_est))
+    return exp(BigFloat(Gen.assess(nl8, args, y_cmap)[1] - log_ml_est))
 end
 
 """

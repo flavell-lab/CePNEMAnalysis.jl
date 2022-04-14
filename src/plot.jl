@@ -64,7 +64,7 @@ end
 # TODO: finish this function
 function plot_deconvolved_neural_activity(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200, pos_θh=[100], pos_P=[100])
     if axis == 1
-        dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], 2, res=len), dims=1), dims=1)), c=cgrad([:black, :blue, :cyan]), clim=(-1,3))
+        dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], 2, res=len), dims=1), dims=1)
     elseif axis == 2
         heatmap(v_rng, θh_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :red, :magenta]), clim=(-1,3))
     elseif axis == 3

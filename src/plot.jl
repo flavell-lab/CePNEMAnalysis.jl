@@ -269,8 +269,8 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
             y_max = y_rng[2]
             y_fit_array = zeros(max_t, length(plot_fit_idx))
 
-            for i = plot_fit_idx
-                params = fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8]
+            for t = plot_fit_idx
+                params = fit_results[dataset]["sampled_trace_params"][rng,neuron,t,1:8]
         
                 fit = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
                 y_fit_array[t, :] .= fit

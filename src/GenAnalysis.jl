@@ -47,5 +47,5 @@ export
     plot_tsne,
     plot_tau_histogram,
     plot_neuron,
-    plot_posterior_heatmap
+    plot_posterior_heatmap!
 end # module

@@ -8,8 +8,9 @@ Loads Gen output data.
 - `n_params`: Number of parameters in the Gen model
 - `n_particles`: Number of particles in the Gen fit
 - `n_samples`: Number of samples from the posterior given by the Gen fit
+- `is_mcmc`: Whether fits are done via MCMC (as opposed to SMC)
 """
-function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, n_samples)
+function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc)
     fit_results = Dict()
     incomplete_datasets = Dict()
 
@@ -36,11 +37,14 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
         fit_results[dataset]["trace_array"] = data["trace_array"]
         fit_results[dataset]["ranges"] = ranges
         fit_results[dataset]["num_neurons"] = n_neurons
-        fit_results[dataset]["trace_params"] = zeros(length(ranges), n_neurons, n_particles, n_params)
-        fit_results[dataset]["log_weights"] = zeros(length(ranges), n_neurons, n_particles)
-        fit_results[dataset]["trace_scores"] = zeros(length(ranges), n_neurons, n_particles)
+        if !is_mcmc
+            fit_results[dataset]["trace_params"] = zeros(length(ranges), n_neurons, n_particles, n_params)
+            fit_results[dataset]["log_weights"] = zeros(length(ranges), n_neurons, n_particles)
+            fit_results[dataset]["trace_scores"] = zeros(length(ranges), n_neurons, n_particles)
+            fit_results[dataset]["log_ml_est"] = zeros(length(ranges), n_neurons)
+        end
+
         fit_results[dataset]["sampled_trace_params"] = zeros(length(ranges), n_neurons, n_samples, n_params)
-        fit_results[dataset]["log_ml_est"] = zeros(length(ranges), n_neurons)
         fit_results[dataset]["sampled_tau_vals"] = zeros(length(ranges), n_neurons, n_samples)
         fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][1600] - data["timestamp_confocal"][801]) / (1598)
 
@@ -49,11 +53,13 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
             for neuron = 1:n_neurons
                 try
                     h5open(joinpath(path_output, "$(dataset)/$(Int(rng[1]))to$(Int(rng[end]))/h5/$(neuron).h5")) do f
-                        fit_results[dataset]["trace_params"][i,neuron,:,:] .= read(f, "trace_params")
-                        fit_results[dataset]["log_weights"][i,neuron,:] .= read(f, "log_weights")
-                        fit_results[dataset]["trace_scores"][i,neuron,:] .= read(f, "trace_scores")
+                        if !is_mcmc
+                            fit_results[dataset]["trace_params"][i,neuron,:,:] .= read(f, "trace_params")
+                            fit_results[dataset]["log_weights"][i,neuron,:] .= read(f, "log_weights")
+                            fit_results[dataset]["trace_scores"][i,neuron,:] .= read(f, "trace_scores")
+                            fit_results[dataset]["log_ml_est"][i,neuron] = read(f, "log_ml_est")
+                        end
                         fit_results[dataset]["sampled_trace_params"][i,neuron,:,:] .= read(f, "sampled_trace_params")
-                        fit_results[dataset]["log_ml_est"][i,neuron] = read(f, "log_ml_est")
                         s = compute_s.(fit_results[dataset]["sampled_trace_params"][i,neuron,:,7])
                         fit_results[dataset]["sampled_tau_vals"][i,neuron,:] .= log.(s ./ (s .+ 1), 0.5) .* fit_results[dataset]["avg_timestep"]
                     end

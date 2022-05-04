@@ -335,7 +335,7 @@ function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, para
     c12 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param2]    
  
 
-    hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng)
+    hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng))
     Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
 end
 

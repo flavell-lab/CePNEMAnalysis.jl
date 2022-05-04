@@ -242,38 +242,40 @@ Plots a neuron and model fits to that neuron.
 - `plot_stim` (optional, default `false`): Plot the heat stim.
 - `plot_size` (optional, default `(700,350)`): Size of the plot
 - `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
+- `linewidth` (optional, default `2`): width of neuron trace
+- `contrast` (optional, default `99`): contrast of heatmap
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
-        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5))
+        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99)
     max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : 1600
     rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
-    
+
     avg_timestep = fit_results[dataset]["avg_timestep"] / 60
-    
+
     trace = fit_results[dataset]["trace_array"][neuron,rng_fit]
     all_rev = [t - rng_fit[1] + 1 for t in rng_fit if fit_results[dataset]["v"][t] < 0]
     Plots.plot()
-    if plot_rev
-        Plots.vline(avg_timestep .* all_rev, opacity=0.4, color=palette(:default)[2], label=nothing)
-    end
-    
+
     tr1 = nothing
     tr2 = nothing
     if plot_fit_idx == :mle
         mle_est = fit_results[dataset]["trace_params"][rng, neuron, argmax(fit_results[dataset]["trace_scores"][rng, neuron, :]), 1:8]
-        fit = model_nl8(max_t, mle_est..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-        Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+        f = model_nl8(max_t, mle_est..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+        Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), f, linewidth=2, label=nothing)
     elseif !isnothing(plot_fit_idx)
         if use_heatmap
             y_min = y_rng[1]
             y_max = y_rng[2]
             y_fit_array = zeros(max_t, length(plot_fit_idx))
 
-            for t = plot_fit_idx
-                params = fit_results[dataset]["sampled_trace_params"][rng,neuron,t,1:8]
-        
-                fit = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-                y_fit_array[t, :] .= fit
+            for i = plot_fit_idx
+                params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8])
+                if rng != 1 && !plot_rng_only
+                    params[6] = trace[1]
+                end
+
+                f = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+                y_fit_array[:, i] .= f
             end
             y_bins = y_min:heatmap_hist_step:y_max
             y_hist_array = zeros(max_t, length(y_bins) - 1)
@@ -281,17 +283,25 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
                 hist_fit = fit(Histogram, y_fit_array[t,:],  y_bins)
                 y_hist_array[t,:] = hist_fit.weights
             end
-            heatmap!(avg_timestep .* (rng_fit .- rng_fit[1]), y_bins[1:end-1] .+ 0.005, y_hist_array', c=cgrad([:white, plot_rev ? palette(:default)[3] : palette(:default)[2], :black]), colorbar=nothing, left_margin=5mm)
+            heatmap!(avg_timestep .* (rng_fit .- rng_fit[1]), y_bins[1:end-1] .+ 0.005, y_hist_array', 
+                    c=cgrad([:white, plot_rev ? palette(:default)[3] : palette(:default)[2], :black]), 
+                    clim=(percentile(reshape(y_hist_array, length(y_hist_array)),(100-contrast)), percentile(reshape(y_hist_array, length(y_hist_array)),contrast)), colorbar=nothing, left_margin=5mm)
         else
             for idx in plot_fit_idx
                 params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng, neuron, idx, 1:8])
-                fit = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-                Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), fit, linewidth=2, label=nothing)
+                if rng != 1 && !plot_rng_only
+                    params[6] = trace[1]
+                end
+                f = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+                Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), f, linewidth=2, label=nothing)
             end
         end
     end
-    
-    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=2, color=palette(:default)[1], size=plot_size)
+
+    if plot_rev
+        Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+    end
+    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
 
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1
@@ -313,27 +323,19 @@ Plots the heatmap of the projection of posterior particles of a neuron into a 2D
 - `param1`: First parameter to plot (as an index 1 through 9)
 - `param2`: Second parameter to plot (as an index 1 through 9)
 - `init` (optional, default `true`): Initialize a new plot, rather than overlaying on top of a preexisting plot
-- `color`: Color of the heatmap
+- `color` (optional, default `palette(:default)[2]`): Color of the heatmap
+- `x_rng` (optional, default `-3:0.1:3`): `x`-axis range
+- `y_rng` (optional, default `-3:0.1:3`): `y`-axis range
 """
-function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2])
+function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2], x_rng=-3:0.1:3, y_rng=-3:0.1:3)
     if init
         Plots.plot()
     end
     c11 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param1]
-    if param1 == 7
-        c11 = compute_s(c11)
-    elseif param1 == 9
-        c11 = compute_σ(c11)
-    end
-
     c12 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param2]    
-    if param2 == 7
-        c12 = compute_s(c12)
-    elseif param2 == 9
-        c12 = compute_σ(c12)
-    end
+ 
 
-    hist_fit = fit(Histogram, (c11,c12), (-3:0.1:3, -2:0.05:1))
+    hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng)
     Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
 end
 

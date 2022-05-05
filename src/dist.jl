@@ -122,10 +122,10 @@ function overlap_index(p,q)
 end
 
 """
-Computes `Prob(p>q)` for `p~P`, `q~Q`
-Here `P` and `Q` are arrays of samples
+Computes `Prob(p+threshold>q)` for `p~P`, `q~Q`
+Here `P` and `Q` are arrays of samples and `threshold` is the threshold
 """
-function prob_P_greater_Q(P,Q)
+function prob_P_greater_Q(P,Q,threshold)
     p_greater_q = 0
     Q_const = NaN
     if minimum(Q) == maximum(Q)
@@ -133,9 +133,9 @@ function prob_P_greater_Q(P,Q)
     end
     for p in P
         if !isnan(Q_const)
-            p_greater_q += sum(p > Q_const) .+ sum(p == Q_const) / 2
+            p_greater_q += sum(p + threshold > Q_const) .+ sum(p + threshold == Q_const) / 2
         else
-            p_greater_q += sum(p .> Q) + sum(p .== Q) / 2
+            p_greater_q += sum(p + threshold .> Q) + sum(p + threshold .== Q) / 2
         end
     end
     if !isnan(Q_const)

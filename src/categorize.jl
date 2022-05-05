@@ -143,7 +143,7 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
                     # count equal points as 0.5
                     diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                     diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
                 end
             end
         end
@@ -153,14 +153,14 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,:] .- deconvolved_activity_1[:,i,2,:]
         diff_2 = deconvolved_activity_2[:,i,1,:] .- deconvolved_activity_2[:,i,2,:]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? prob_P_greater_Q(diff_2 .+ threshold, diff_1) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? prob_P_greater_Q(diff_2, diff_1, threshold) : metric(median(diff_2) - median(diff_1))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,:,1] .- deconvolved_activity_1[:,i,:,2]
         diff_2 = deconvolved_activity_2[:,i,:,1] .- deconvolved_activity_2[:,i,:,2]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? prob_P_greater_Q(diff_2 .+ threshold, diff_1) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? prob_P_greater_Q(diff_2, diff_1, threshold) : metric(median(diff_2) - median(diff_1))
     end
     
     return categories
@@ -398,7 +398,7 @@ function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is
             for n = 1:fit_results[dataset]["num_neurons"]
                 empty_cat[n] = zeros(size(deconvolved_activity[dataset][rng][n]))
             end
-            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset])
+            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold)
         end
     end
     return neuron_categorization, neuron_p_vals, neuron_cats

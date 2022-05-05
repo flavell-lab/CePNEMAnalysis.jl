@@ -119,27 +119,29 @@ end
 
 
 """
-Computes neuron p-values by computing differences between two different deconvolved activities.
+Computes neuron p-values by comparing differences between two different deconvolved activities to a threshold.
 To find encoding of a neuron, set the second activity to 0.
 To find encoding change, set it to a different time window.
 To find distance between neurons, set `compute_p = false` and specify the `metric` (default `abs`)
 to use to compare medians of the two posteriors.
 """
-function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2; compute_p::Bool=true, metric::Function=abs)
+function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold::Real; compute_p::Bool=true, metric::Function=abs)
     categories = Dict()
     
     s = size(deconvolved_activity_1)
     categories["v_encoding"] = compute_p ? ones(s[2], s[2], s[3], s[4]) : zeros(s[2], s[2], s[3], s[4])
     
-    for i in 1:s[2]-1
-        for j in i+1:s[2]
+    for i in 1:s[2]
+        for j in 1:s[2]
+            if i == j
+                continue
+            end
             for k in 1:s[3]
                 for m in 1:s[4]
                     # count equal points as 0.5
                     diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                     diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1, diff_2) : metric(median(diff_1) - median(diff_2))
-                    categories["v_encoding"][j,i,k,m] = compute_p ? 1-categories["v_encoding"][i,j,k,m] : categories["v_encoding"][i,j,k,m]
+                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1, diff_2 .+ threshold) : metric(median(diff_1) - median(diff_2))
                 end
             end
         end
@@ -149,12 +151,12 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2; compute_p
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,:] .- deconvolved_activity_1[:,i,2,:]
         diff_2 = deconvolved_activity_2[:,i,1,:] .- deconvolved_activity_2[:,i,2,:]
-        categories[k] = compute_p ? prob_P_greater_Q(diff_1, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_ventral"] = compute_p ? prob_P_greater_Q(diff_1, diff_2 .+ threshold) : metric(median(diff_1) - median(diff_2))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,:,1] .- deconvolved_activity_1[:,i,:,2]
         diff_2 = deconvolved_activity_2[:,i,:,1] .- deconvolved_activity_2[:,i,:,2]
-        categories[k] = compute_p ? prob_P_greater_Q(diff_1, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k] = compute_p ? prob_P_greater_Q(diff_1, diff_2 .+ threshold) : metric(median(diff_1) - median(diff_2))
     end
     
     return categories
@@ -168,8 +170,9 @@ Categorizes all neurons from their deconvolved activities.
 - `deconvolved_activities_2`: Either 0 (to check neuron encoding), or deconvolved activities of neurons at a different time point (to check encoding change).
 - `p`: Significant p-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
+- `threshold`: Deconvolved activity must differ by at least this much
 """
-function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool)
+function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, threshold::Real)
     categories = Dict()
     categories["v"] = Dict()
     categories["v"]["rev"] = []

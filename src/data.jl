@@ -35,6 +35,7 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
         fit_results[dataset]["θh"] = data["θh"]
         fit_results[dataset]["P"] = data["pumping"]
         fit_results[dataset]["trace_array"] = data["trace_array"]
+        fit_results[dataset]["trace_original"] = data["trace_original"]
         fit_results[dataset]["ranges"] = ranges
         fit_results[dataset]["num_neurons"] = n_neurons
         if !is_mcmc

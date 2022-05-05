@@ -268,14 +268,14 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
             y_max = y_rng[2]
             y_fit_array = zeros(max_t, length(plot_fit_idx))
 
-            for i = plot_fit_idx
+            for (idx, i) = enumerate(plot_fit_idx)
                 params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8])
                 if rng != 1 && !plot_rng_only
                     params[6] = trace[1]
                 end
 
                 f = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-                y_fit_array[:, i] .= f
+                y_fit_array[:, idx] .= f
             end
             y_bins = y_min:heatmap_hist_step:y_max
             y_hist_array = zeros(max_t, length(y_bins) - 1)

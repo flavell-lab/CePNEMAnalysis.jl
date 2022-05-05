@@ -8,16 +8,16 @@ end
 
 """
 Computes the valid range of a behavior `beh` (eg: velocity cropped to a given time range).
-Computes percentile based on `thresh`, and uses 4 points instead of 2 for velocity (`beh_idx = 1`)
+Computes percentile based on `beh_percent`, and uses 4 points instead of 2 for velocity (`beh_idx = 1`)
 """
-function compute_range(beh::Vector{Float64}, thresh::Real, beh_idx::Int)
-    @assert(thresh < 50)
+function compute_range(beh::Vector{Float64}, beh_percent::Real, beh_idx::Int)
+    @assert(beh_percent < 50)
     if beh_idx == 1
-        min_beh = percentile(beh[beh .< 0], 2*thresh)
-        max_beh = percentile(beh[beh .> 0], 100-2*thresh)
+        min_beh = percentile(beh[beh .< 0], 2*beh_percent)
+        max_beh = percentile(beh[beh .> 0], 100-2*beh_percent)
     else
-        min_beh = percentile(beh, thresh)
-        max_beh = percentile(beh, 100-thresh)
+        min_beh = percentile(beh, beh_percent)
+        max_beh = percentile(beh, 100-beh_percent)
     end
     if beh_idx != 3
         @assert(min_beh < 0)
@@ -57,7 +57,7 @@ Makes deconvolved lattices for each dataset, time range, and neuron in `fit_resu
 Returns velocity, head angle, and pumping ranges, and the deconvolved activity of each neuron at each lattice point defined by them,
 for both statistically useful ranges (first return value), and full ranges (second return value) designed for plotting consistency.
 """
-function make_deconvolved_lattice(fit_results, thresh, plot_thresh)
+function make_deconvolved_lattice(fit_results, beh_percent, plot_thresh)
     deconvolved_activity = Dict()
     v_ranges = Dict()
     θh_ranges = Dict()
@@ -97,9 +97,9 @@ function make_deconvolved_lattice(fit_results, thresh, plot_thresh)
 
             results = fit_results[dataset]["sampled_trace_params"]
 
-            v_ranges[dataset][rng] = compute_range(v, thresh, 1)
-            θh_ranges[dataset][rng] = compute_range(θh, thresh, 2)
-            P_ranges[dataset][rng] = compute_range(P, thresh, 3)
+            v_ranges[dataset][rng] = compute_range(v, beh_percent, 1)
+            θh_ranges[dataset][rng] = compute_range(θh, beh_percent, 2)
+            P_ranges[dataset][rng] = compute_range(P, beh_percent, 3)
             
             
 
@@ -382,8 +382,9 @@ and the raw (not multiple-hypothesis corrected) p-values.
 - `deconvolved_activity`: Dictionary of deconvolved activity values at lattice points.
 - `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
+- `threshold`: Threshold for computing encoding.
 """
-function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is_ventral)
+function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is_ventral, threshold)
     neuron_categorization = Dict()
     neuron_p_vals = Dict()
     neuron_cats = Dict()
@@ -410,9 +411,10 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `fit_results`: Gen fit results.
 - `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
-- `thresh` (optional, default `25`): Location to compute behavior percentiles. 
+- `threshold`: Threshold for encoding change difference
+- `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
     @showprogress for dataset in keys(fit_results)
@@ -427,15 +429,15 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
 
         for t1 = 1:n_ranges-1
             range1 = fit_results[dataset]["ranges"][t1]
-            v_range_1 = compute_range(v[range1], thresh, 1)
-            θh_range_1 = compute_range(θh[range1], thresh, 2)
-            P_range_1 = compute_range(P[range1], thresh, 3)
+            v_range_1 = compute_range(v[range1], beh_percent, 1)
+            θh_range_1 = compute_range(θh[range1], beh_percent, 2)
+            P_range_1 = compute_range(P[range1], beh_percent, 3)
 
             for t2 = t1+1:n_ranges
                 range2 = fit_results[dataset]["ranges"][t2]
-                v_range_2 = compute_range(v[range2], thresh, 1)
-                θh_range_2 = compute_range(θh[range2], thresh, 2)
-                P_range_2 = compute_range(P[range2], thresh, 3)
+                v_range_2 = compute_range(v[range2], beh_percent, 1)
+                θh_range_2 = compute_range(θh[range2], beh_percent, 2)
+                P_range_2 = compute_range(P[range2], beh_percent, 3)
 
                 v_rng = [max(v_range_1[1], v_range_2[1]), max(v_range_1[2], v_range_2[2]),
                             min(v_range_1[3], v_range_2[3]), min(v_range_1[4], v_range_2[4])]
@@ -467,7 +469,7 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral; thresh=25)
                     deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
                 end
                 
-                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral[dataset])
+                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold)
             end
         end
     end

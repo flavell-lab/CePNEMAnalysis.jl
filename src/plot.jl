@@ -211,15 +211,37 @@ end
 
 """
 Plots histogram of tau (half-decay) times for all encoding neurons.
+
+# Arguments:
+- `fit_results`: Gen fit results
+- `neuron_categorization`: Categorization of each neuron
+- `t_max` (optional, default 60): Maximum time point to plot
+- `use_cdf` (optional, default true): Whether to use CDF format instead of PDF
+- `percent` (optional, default 95): If using CDF format, credible range to show
 """
-function plot_tau_histogram(fit_results, neuron_categorization, bin_max=15)
+function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, percent=95)
     s_vals = []
+    s_vals_min = []
+    s_vals_max = []
     for dataset in keys(fit_results)
         for rng in 1:length(fit_results[dataset]["ranges"])
+            delta = (100-percent)/2
+            append!(s_vals_min, [percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], delta) for n in neuron_categorization[dataset][rng]["all"]])
             append!(s_vals, dropdims(median(fit_results[dataset]["sampled_tau_vals"][rng,neuron_categorization[dataset][rng]["all"],:], dims=2), dims=2))
+            append!(s_vals_max, [percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], 100-delta) for n in neuron_categorization[dataset][rng]["all"]])
         end
     end
-    Plots.histogram(s_vals, normalize=true, bins=0:1:bin_max, label=nothing, color="gray")
+    if use_cdf
+        r = 0:0.1:t_max
+        mn = [sum(s_vals_min .< i) ./ length(s_vals) for i=r]
+        m = [sum(s_vals .< i) ./ length(s_vals) for i=r]
+        mx = [sum(s_vals_max .< i) ./ length(s_vals) for i=r]
+        
+        Plots.plot(r, m, ribbon=(m.-mn, mx.-m), label=nothing, ylim=(0,1))
+        ylabel!("cumulative fraction of encoding neurons")
+    else
+        Plots.histogram(s_vals, normalize=true, bins=0:1:t_max, label=nothing, color="gray")
+    end
     xlabel!("half decay (s)")
     ylabel!("fraction of encoding neurons")
 end
@@ -242,8 +264,13 @@ Plots a neuron and model fits to that neuron.
 - `plot_stim` (optional, default `false`): Plot the heat stim.
 - `plot_size` (optional, default `(700,350)`): Size of the plot
 - `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
+<<<<<<< HEAD
+- `linewidth` (optional, default 2): Width of neuron line
+- `contrast` (optional, default 99): If `use_heatmap` is true, contrast of heatmap
+=======
 - `linewidth` (optional, default `2`): width of neuron trace
 - `contrast` (optional, default `99`): contrast of heatmap
+>>>>>>> 696452129a2b3da31806d2a8cdeaea7ad75b7614
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
         heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99)
@@ -322,6 +349,8 @@ Plots the heatmap of the projection of posterior particles of a neuron into a 2D
 - `neuron`: Neuron
 - `param1`: First parameter to plot (as an index 1 through 9)
 - `param2`: Second parameter to plot (as an index 1 through 9)
+- `c1rng`: First parameter range
+- `c2rng`: Second parameter range
 - `init` (optional, default `true`): Initialize a new plot, rather than overlaying on top of a preexisting plot
 - `color` (optional, default `palette(:default)[2]`): Color of the heatmap
 - `x_rng` (optional, default `-3:0.1:3`): `x`-axis range

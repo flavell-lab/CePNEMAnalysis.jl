@@ -264,8 +264,13 @@ Plots a neuron and model fits to that neuron.
 - `plot_stim` (optional, default `false`): Plot the heat stim.
 - `plot_size` (optional, default `(700,350)`): Size of the plot
 - `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
+<<<<<<< HEAD
 - `linewidth` (optional, default 2): Width of neuron line
 - `contrast` (optional, default 99): If `use_heatmap` is true, contrast of heatmap
+=======
+- `linewidth` (optional, default `2`): width of neuron trace
+- `contrast` (optional, default `99`): contrast of heatmap
+>>>>>>> 696452129a2b3da31806d2a8cdeaea7ad75b7614
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
         heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99)
@@ -347,27 +352,19 @@ Plots the heatmap of the projection of posterior particles of a neuron into a 2D
 - `c1rng`: First parameter range
 - `c2rng`: Second parameter range
 - `init` (optional, default `true`): Initialize a new plot, rather than overlaying on top of a preexisting plot
-- `color`: Color of the heatmap
+- `color` (optional, default `palette(:default)[2]`): Color of the heatmap
+- `x_rng` (optional, default `-3:0.1:3`): `x`-axis range
+- `y_rng` (optional, default `-3:0.1:3`): `y`-axis range
 """
-function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2, c1rng, c2rng; init=true, color=palette(:default)[2])
+function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2], x_rng=-3:0.1:3, y_rng=-3:0.1:3)
     if init
         Plots.plot()
     end
     c11 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param1]
-    if param1 == 7
-        c11 = compute_s.(c11)
-    elseif param1 == 9
-        c11 = compute_σ.(c11)
-    end
-
     c12 = fit_results[dataset]["sampled_trace_params"][rng,neuron,:,param2]    
-    if param2 == 7
-        c12 = compute_s.(c12)
-    elseif param2 == 9
-        c12 = compute_σ.(c12)
-    end
+ 
 
-    hist_fit = fit(Histogram, (c11,c12), (c1rng, c2rng))
+    hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng))
     Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
 end
 

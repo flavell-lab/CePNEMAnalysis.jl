@@ -202,8 +202,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
 
     neuron_cats = Dict()
     for neuron = keys(deconvolved_activities_1)
-        thresh = threshold * std(trace_original[neuron,:]) / mean(trace_original[neuron, :])
-        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron], deconvolved_activities_2[neuron], thresh)
+        signal = std(trace_original[neuron,:]) / mean(trace_original[neuron, :])
+        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron] .* signal, deconvolved_activities_2[neuron] .* signal, threshold)
     end
     
     max_n = maximum(keys(neuron_cats))

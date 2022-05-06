@@ -8,6 +8,7 @@ using Statistics
 using StatsBase
 using ProgressMeter
 using Plots
+using Plots.PlotMeasures
 using TSne
 using ColorSchemes
 using MultipleTesting

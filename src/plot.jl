@@ -264,13 +264,8 @@ Plots a neuron and model fits to that neuron.
 - `plot_stim` (optional, default `false`): Plot the heat stim.
 - `plot_size` (optional, default `(700,350)`): Size of the plot
 - `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
-<<<<<<< HEAD
 - `linewidth` (optional, default 2): Width of neuron line
 - `contrast` (optional, default 99): If `use_heatmap` is true, contrast of heatmap
-=======
-- `linewidth` (optional, default `2`): width of neuron trace
-- `contrast` (optional, default `99`): contrast of heatmap
->>>>>>> 696452129a2b3da31806d2a8cdeaea7ad75b7614
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
         heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99)

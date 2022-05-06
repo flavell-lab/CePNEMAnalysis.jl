@@ -133,17 +133,15 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
     s = size(deconvolved_activity_1)
     categories["v_encoding"] = compute_p ? ones(s[2], s[2], s[3], s[4]) : zeros(s[2], s[2], s[3], s[4])
     
-    for i in 1:s[2]
-        for j in 1:s[2]
-            if i == j
-                continue
-            end
+    for i in 1:s[2]-1
+        for j in i+1:s[2]
             for k in 1:s[3]
                 for m in 1:s[4]
                     # count equal points as 0.5
                     diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                     diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
                     categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
+                    categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1, diff_2, -threshold) : metric(median(diff_1) - median(diff_2))
                 end
             end
         end

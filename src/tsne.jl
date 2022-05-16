@@ -84,13 +84,17 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     end
     for idx1=1:size(distance_matrix,1)-1
         for idx2=idx1+1:size(distance_matrix,1)
-            n_cat = neuron_p_vals(deconvolved_activities[idx1,:,:,:,:], deconvolved_activities[idx2,:,:,:,:], compute_p=false)
+            n_cat = neuron_p_vals(deconvolved_activities[idx1,:,:,:,:], deconvolved_activities[idx2,:,:,:,:], 0, compute_p=false)
             
             distance_matrix[idx1,idx2] = v_weight * sum([sum(n_cat["v_encoding"][i,i+1,:,:]) for i=1:3]) * v_STD / (v_range[4] - v_range[1])
-            distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_θh_encoding"]) * θh_STD / (θh_range[2] - θh_range[1])
-            distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_θh_encoding"]) * θh_STD / (θh_range[2] - θh_range[1])
-            distance_matrix[idx1,idx2] += 4 * sum(n_cat["rev_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
-            distance_matrix[idx1,idx2] += 4 * sum(n_cat["fwd_P_encoding"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_θh_encoding_act"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_θh_encoding_inh"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["fwd_θh_encoding_act"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["fwd_θh_encoding_inh"]) * θh_STD / (θh_range[2] - θh_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_P_encoding_act"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_P_encoding_inh"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["fwd_P_encoding_act"]) * P_STD / (P_range[2] - P_range[1])
+            distance_matrix[idx1,idx2] += 2 * sum(n_cat["fwd_P_encoding_inh"]) * P_STD / (P_range[2] - P_range[1])
             distance_matrix[idx1,idx2] += s_weight * abs(median(fit_results[dataset_ids[idx1]]["sampled_tau_vals"][rng_ids[idx1],neuron_ids[idx1],:])
                     - median(fit_results[dataset_ids[idx2]]["sampled_tau_vals"][rng_ids[idx2],neuron_ids[idx2],:]))
             distance_matrix[idx2,idx1] = distance_matrix[idx1,idx2]

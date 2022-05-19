@@ -141,6 +141,7 @@ function prob_P_greater_Q(P,Q)
     P_mixed_vals = []
     Q_small = 0
     Q_large = 0
+    Q_mixed = 0
     Q_mixed_vals = []
     Q_tot = length(Q)
 

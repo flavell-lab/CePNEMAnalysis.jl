@@ -257,7 +257,8 @@ Plots a neuron and model fits to that neuron.
 - `plot_rng_only` (optional, default `true`): Plot only the range of the fit (vs the entire time range)
 - `plot_fit_idx` (optional, default `nothing`): Plot a Gen fit to the neuron.
     - If set to an array of numbers, plot the particles with indices in that array.
-    - If set to `:mle`, plot the maximum-likelihood particle
+    - If set to `:mle`, plot the maximum-likelihood particle. Only available for SMC fits, not MCMC fits.
+    - If set to `:median`, plot the median trace.
 - `use_heatmap` (optional, default `false`): If `plot_fit_idx` is an array, plot the fits as a heatmap instead of as lines.
 - `heatmap_hist_step` (optional, default `0.01`): Histogram `y`-step
 - `plot_rev` (optional, default `false`): Plot reversal events.
@@ -266,56 +267,93 @@ Plots a neuron and model fits to that neuron.
 - `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
 - `linewidth` (optional, default 2): Width of neuron line
 - `contrast` (optional, default 99): If `use_heatmap` is true, contrast of heatmap
+- `idx_split` (optional, default `[1:1600]`): Ranges to fit separately (for resetting EWMA purposes). Must be contiguous.
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
-        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99)
-    max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : 1600
-    rng_fit = plot_rng_only ? fit_results[dataset]["ranges"][rng] : 1:1600
+        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99, idx_split=[1:1600])
+    max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : idx_split[end][end] - idx_split[1][1] + 1
+
+
+    rngs_fit = plot_rng_only ? [fit_results[dataset]["ranges"][rng]] : idx_split
+
+    if length(rngs_fit) > 1
+        for i=2:length(rngs_fit)
+            @assert(rngs_fit[i-1][end] + 1 == rngs_fit[i][1], "Fit ranges must be contiguous.")
+        end
+    end
 
     avg_timestep = fit_results[dataset]["avg_timestep"] / 60
 
-    trace = fit_results[dataset]["trace_array"][neuron,rng_fit]
-    all_rev = [t - rng_fit[1] + 1 for t in rng_fit if fit_results[dataset]["v"][t] < 0]
+    trace = fit_results[dataset]["trace_array"][neuron,:]
+    all_rev = [t - rngs_fit[1][1] + 1 for t in rngs_fit[1][1]:rngs_fit[end][end] if fit_results[dataset]["v"][t] < 0]
     Plots.plot()
 
     tr1 = nothing
     tr2 = nothing
+
+    color_idx = 2
+    if plot_rev
+        color_idx = 3
+    end
     if plot_fit_idx == :mle
         mle_est = fit_results[dataset]["trace_params"][rng, neuron, argmax(fit_results[dataset]["trace_scores"][rng, neuron, :]), 1:8]
-        f = model_nl8(max_t, mle_est..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-        Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), f, linewidth=2, label=nothing)
+        f = zeros(max_t)
+        f0 = rngs_fit[1][1] - 1
+        for rng_fit = rngs_fit
+            params = deepcopy(mle_est)
+            if !plot_rng_only
+                params[6] = trace[rng_fit[1]]
+            end
+            f[rng_fit .- f0] .= model_nl8(rng_fit[end] - rng_fit[1] + 1, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
+        end
+        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), f, linewidth=2, label=nothing, color=palette(:default)[color_idx])
     elseif !isnothing(plot_fit_idx)
-        if use_heatmap
+        plot_idx = plot_fit_idx == :median ? size(fit_results[dataset]["sampled_trace_params"], 3) : plot_fit_idx
+        if use_heatmap || plot_fit_idx == :median
             y_min = y_rng[1]
             y_max = y_rng[2]
-            y_fit_array = zeros(max_t, length(plot_fit_idx))
+            y_fit_array = zeros(max_t, length(plot_idx))
 
-            for (idx, i) = enumerate(plot_fit_idx)
-                params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8])
-                if rng != 1 && !plot_rng_only
-                    params[6] = trace[1]
+            for (idx, i) = enumerate(plot_idx)
+                f = zeros(max_t)
+                f0 = rngs_fit[1][1] - 1
+                for rng_fit = rngs_fit
+                    params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,i,1:8])
+                    if !plot_rng_only
+                        params[6] = trace[rng_fit[1]]
+                    end
+                    f[rng_fit .- f0] .= model_nl8(rng_fit[end] - rng_fit[1] + 1, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
                 end
-
-                f = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
                 y_fit_array[:, idx] .= f
             end
-            y_bins = y_min:heatmap_hist_step:y_max
-            y_hist_array = zeros(max_t, length(y_bins) - 1)
-            for t = 1:max_t
-                hist_fit = fit(Histogram, y_fit_array[t,:],  y_bins)
-                y_hist_array[t,:] = hist_fit.weights
+
+            if plot_fit_idx == :median
+                m = dropdims(median(y_fit_array, dims=2), dims=2)
+                Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), m, linewidth=2, label=nothing, color=palette(:default)[color_idx])
+            else
+                y_bins = y_min:heatmap_hist_step:y_max
+                y_hist_array = zeros(max_t, length(y_bins) - 1)
+                for t = 1:max_t
+                    hist_fit = fit(Histogram, y_fit_array[t,:],  y_bins)
+                    y_hist_array[t,:] = hist_fit.weights
+                end
+                heatmap!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), y_bins[1:end-1] .+ 0.005, y_hist_array', 
+                        c=cgrad([:white, palette(:default)[color_idx], :black]), 
+                        clim=(percentile(reshape(y_hist_array, length(y_hist_array)),(100-contrast)), percentile(reshape(y_hist_array, length(y_hist_array)),contrast)), colorbar=nothing, left_margin=5mm)
             end
-            heatmap!(avg_timestep .* (rng_fit .- rng_fit[1]), y_bins[1:end-1] .+ 0.005, y_hist_array', 
-                    c=cgrad([:white, plot_rev ? palette(:default)[3] : palette(:default)[2], :black]), 
-                    clim=(percentile(reshape(y_hist_array, length(y_hist_array)),(100-contrast)), percentile(reshape(y_hist_array, length(y_hist_array)),contrast)), colorbar=nothing, left_margin=5mm)
         else
             for idx in plot_fit_idx
                 params = deepcopy(fit_results[dataset]["sampled_trace_params"][rng, neuron, idx, 1:8])
-                if rng != 1 && !plot_rng_only
-                    params[6] = trace[1]
+                f = zeros(max_t)
+                f0 = rngs_fit[1][1] - 1
+                for rng_fit = rngs_fit
+                    if !plot_rng_only
+                        params[6] = trace[1]
+                    end
+                    f[rng_fit .- f0] .= model_nl8(rng_fit[end] - rng_fit[1] + 1, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
                 end
-                f = model_nl8(max_t, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
-                Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), f, linewidth=2, label=nothing)
+                Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), f, linewidth=2, label=nothing, color=palette(:default)[color_idx])
+                color_idx += 1
             end
         end
     end
@@ -323,7 +361,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     if plot_rev
         Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
     end
-    Plots.plot!(avg_timestep .* (rng_fit .- rng_fit[1]), trace, label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
+    Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
 
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1

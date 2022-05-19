@@ -82,7 +82,7 @@ function make_deconvolved_lattice(fit_results, beh_percent, plot_thresh)
         θh_ranges_plot[dataset] = Dict()
         P_ranges_plot[dataset] = Dict()
 
-        for rng=1:4
+        for rng=1:length(fit_results[dataset]["ranges"])
             deconvolved_activity[dataset][rng] = Dict()
 
             deconvolved_activity_plot[dataset][rng] = Dict()
@@ -140,8 +140,8 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
                     # count equal points as 0.5
                     diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                     diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
-                    categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1, diff_2, -threshold) : metric(median(diff_1) - median(diff_2))
+                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+                    categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
                 end
             end
         end
@@ -151,14 +151,14 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,:] .- deconvolved_activity_1[:,i,2,:]
         diff_2 = deconvolved_activity_2[:,i,1,:] .- deconvolved_activity_2[:,i,2,:]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1, diff_2, -threshold) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_2) - median(diff_1))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,:,1] .- deconvolved_activity_1[:,i,:,2]
         diff_2 = deconvolved_activity_2[:,i,:,1] .- deconvolved_activity_2[:,i,:,2]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1, diff_2, threshold) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1, diff_2, -threshold) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_2) - median(diff_1))
     end
     
     return categories
@@ -484,7 +484,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         n_r = length(fit_results[dataset]["ranges"])
         P_ranges_valid = [r for r=1:n_r if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
         n_neurons_tot_all += fit_results[dataset]["num_neurons"]
-        neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=1:4], BenjaminiHochberg()) .< p) > 0]
+        neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=1:n_r], BenjaminiHochberg()) .< p) > 0]
         n_neurons_fit_all += length(neurons_fit)
         if length(P_ranges_valid) == 0
             @warn("Dataset $(dataset) has no time ranges with valid pumping information")
@@ -498,7 +498,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             P_p_valid = adjust([neuron_p[dataset][r]["P"]["all"][n] for r=P_ranges_valid], BenjaminiHochberg())
             P_p = []
             idx=1
-            for r=1:4
+            for r=1:n_r
                 if r in P_ranges_valid
                     push!(P_p, P_p_valid[idx])
                     idx += 1
@@ -516,7 +516,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
                 n_neurons_beh[3] += 1   
             end
             
-            for r=1:4
+            for r=1:n_r
                 enc = adjust([v_p[r], θh_p[r], P_p[r]], BenjaminiHochberg())
                 max_npred = max(max_npred, sum(enc .< p))
             end

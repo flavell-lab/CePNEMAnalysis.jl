@@ -10,25 +10,14 @@ Loads Gen output data.
 - `n_samples`: Number of samples from the posterior given by the Gen fit
 - `is_mcmc`: Whether fits are done via MCMC (as opposed to SMC)
 """
-function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc)
+function load_gen_output(datasets, fit_ranges, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc)
     fit_results = Dict()
     incomplete_datasets = Dict()
 
     @showprogress for dataset=datasets
         data = import_data(joinpath(path_h5, "$(dataset)-data.h5"))
-        if haskey(data, "stim_begin_confocal")
-            stim = data["stim_begin_confocal"][1]
-            ranges = [1:Int(stim-1), Int(stim+10):800, 801:1200, 1201:1600]
-        elseif haskey(data, "fit_ranges")
-            fit_ranges = data["fit_ranges"]
-            ranges = []
-            for i in 1:length(fit_ranges)-1
-                push!(ranges, fit_ranges[i]+1:fit_ranges[i+1])
-            end
-        else
-            ranges = [1:400, 401:800, 801:1200, 1201:1600]
-        end
-
+        ranges = fit_ranges[dataset]
+            
         n_neurons = size(data["trace_array"], 1)
         fit_results[dataset] = Dict()
         fit_results[dataset]["v"] = data["velocity"]
@@ -47,7 +36,7 @@ function load_gen_output(datasets, path_output, path_h5, n_params, n_particles, 
 
         fit_results[dataset]["sampled_trace_params"] = zeros(length(ranges), n_neurons, n_samples, n_params)
         fit_results[dataset]["sampled_tau_vals"] = zeros(length(ranges), n_neurons, n_samples)
-        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][1600] - data["timestamp_confocal"][801]) / (1598)
+        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][ranges[end][end]] - data["timestamp_confocal"][801]) / (data["timestamp_confocal"][end][end]-2)
 
         incomplete_datasets[dataset] = zeros(Bool, length(ranges), n_neurons)
         for (i,rng)=enumerate(ranges)

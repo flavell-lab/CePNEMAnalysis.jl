@@ -122,25 +122,62 @@ function overlap_index(p,q)
 end
 
 """
-Computes `Prob(p+threshold>q)` for `p~P`, `q~Q`
-Here `P` and `Q` are arrays of samples and `threshold` is the threshold
+Computes `Prob(p>q)` for `p~P`, `q~Q`
+Here `P` and `Q` are arrays of samples
 """
-function prob_P_greater_Q(P,Q,threshold)
+function prob_P_greater_Q(P,Q)
     p_greater_q = 0
     Q_const = NaN
-    if minimum(Q) == maximum(Q)
-        Q_const = minimum(Q)
-    end
-    for p in P
-        if !isnan(Q_const)
-            p_greater_q += sum(p + threshold > Q_const) .+ sum(p + threshold == Q_const) / 2
+
+    min_Q = minimum(Q)
+    max_Q = maximum(Q)
+    min_P = minimum(P)
+    max_P = maximum(P)
+
+    P_small = 0
+    P_large = 0
+    P_tot = length(P)
+    P_mixed = 0
+    P_mixed_vals = []
+    Q_small = 0
+    Q_large = 0
+    Q_mixed_vals = []
+    Q_tot = length(Q)
+
+    for (i,p) in enumerate(P)
+        if p < min_Q
+            P_small += 1
+        elseif p > max_Q
+            P_large += 1
         else
-            p_greater_q += sum(p + threshold .> Q) + sum(p + threshold .== Q) / 2
+            P_mixed += 1
+            push!(P_mixed_vals, p)
         end
     end
-    if !isnan(Q_const)
-        return p_greater_q / length(P)
-    else
-        return p_greater_q / (length(P) * length(Q))
+
+    if P_mixed == 0
+        return P_large / P_tot
     end
+
+    for (i,q) in enumerate(Q)
+        if q < min_P
+            Q_small += 1
+        elseif q > max_P
+            Q_large += 1
+        else
+            Q_mixed += 1
+            push!(Q_mixed_vals, q)
+        end
+    end
+
+    if Q_mixed == 0
+        return Q_small / Q_tot
+    end
+
+    p_greater_q += P_large * Q_tot
+    for p in P_mixed_vals
+        p_greater_q += sum(p .> Q_mixed_vals) + Q_small
+    end
+
+    return p_greater_q / (P_tot * Q_tot)
 end

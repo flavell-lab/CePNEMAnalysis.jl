@@ -384,11 +384,11 @@ and the raw (not multiple-hypothesis corrected) p-values.
 """
 function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is_ventral, threshold)
     neuron_categorization = Dict()
-    neuron_p_vals = Dict()
+    neuron_p = Dict()
     neuron_cats = Dict()
     @showprogress for dataset = keys(deconvolved_activity)
         neuron_categorization[dataset] = Dict()
-        neuron_p_vals[dataset] = Dict()
+        neuron_p[dataset] = Dict()
         neuron_cats[dataset] = Dict()
         for rng = 1:length(fit_results[dataset]["ranges"])
             empty_cat = Dict()
@@ -396,10 +396,10 @@ function categorize_all_neurons(fit_results, deconvolved_activity, p, θh_pos_is
             for n = 1:fit_results[dataset]["num_neurons"]
                 empty_cat[n] = zeros(size(deconvolved_activity[dataset][rng][n]))
             end
-            neuron_categorization[dataset][rng], neuron_p_vals[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold)
+            neuron_categorization[dataset][rng], neuron_p[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold)
         end
     end
-    return neuron_categorization, neuron_p_vals, neuron_cats
+    return neuron_categorization, neuron_p, neuron_cats
 end
 
 """

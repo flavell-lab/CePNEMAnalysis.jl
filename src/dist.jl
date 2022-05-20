@@ -175,6 +175,10 @@ function prob_P_greater_Q(P,Q)
         return Q_small / Q_tot
     end
 
+    if min_Q == max_Q == min_P == max_P
+        return 0.5
+    end
+
     p_greater_q += P_large * Q_tot
     for p in P_mixed_vals
         p_greater_q += sum(p .> Q_mixed_vals) + Q_small

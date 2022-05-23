@@ -122,8 +122,8 @@ function overlap_index(p,q)
 end
 
 """
-Computes `Prob(p>q)` for `p~P`, `q~Q`
-Here `P` and `Q` are arrays of samples
+Computes `Prob(p>q) + Prob(p=q)/2` for `p~P`, `q~Q`
+Here `P` and `Q` are arrays of samples.
 """
 function prob_P_greater_Q(P,Q)
     p_greater_q = 0
@@ -134,15 +134,15 @@ function prob_P_greater_Q(P,Q)
     min_P = minimum(P)
     max_P = maximum(P)
 
-    P_small = 0
-    P_large = 0
+    P_small = 0.
+    P_large = 0.
     P_tot = length(P)
-    P_mixed = 0
-    P_mixed_vals = []
-    Q_small = 0
-    Q_large = 0
-    Q_mixed = 0
-    Q_mixed_vals = []
+    P_mixed = 0.
+    P_mixed_vals = Float64[]
+    Q_small = 0.
+    Q_large = 0.
+    Q_mixed = 0.
+    Q_mixed_vals = Float64[]
     Q_tot = length(Q)
 
     for (i,p) in enumerate(P)
@@ -181,7 +181,7 @@ function prob_P_greater_Q(P,Q)
 
     p_greater_q += P_large * Q_tot
     for p in P_mixed_vals
-        p_greater_q += sum(p .> Q_mixed_vals) + Q_small
+        p_greater_q += sum(p .> Q_mixed_vals) + sum(p .== Q_mixed_vals) / 2 + Q_small
     end
 
     return p_greater_q / (P_tot * Q_tot)

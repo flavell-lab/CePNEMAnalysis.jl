@@ -474,7 +474,6 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold; 
     return encoding_changes, encoding_change_p_vals
 end
 
-# TODO: update this to also get encoding change statistics
 function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05)
     n_neurons_tot_all = 0
     n_neurons_fit_all = 0
@@ -526,3 +525,40 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
     return n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
 end
 
+
+function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=[1,2,3,4], p=0.05)
+    n_neurons_tot = 0
+    n_neurons_enc_change_all = 0
+    n_neurons_enc_change_beh = [0,0,0]
+    for dataset in datasets
+        rngs = [r for r in keys(enc_change_p[dataset]) if (r[1] in rngs_valid && r[2] in rngs_valid)]
+        if length(rngs) == 0
+            @warn("Dataset $(dataset) has no time ranges where pumping could be compared")
+            continue
+        end
+        
+        neurons_ec = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([enc_change_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
+        n_neurons_enc_change_all += length(neurons_ec)
+        
+        n_neurons_tot += fit_results[dataset]["num_neurons"]
+
+        for n=1:fit_results[dataset]["num_neurons"]
+            v_p = adjust([enc_change_p[dataset][r]["v"]["all"][n] for r=rngs], BenjaminiHochberg())
+            θh_p = adjust([enc_change_p[dataset][r]["θh"]["all"][n] for r=rngs], BenjaminiHochberg())
+            P_p = adjust([enc_change_p[dataset][r]["P"]["all"][n] for r=rngs], BenjaminiHochberg())
+            if any(v_p .< p)
+                n_neurons_enc_change_beh[1] += 1
+            end
+            
+            if any(θh_p .< p)
+                n_neurons_enc_change_beh[2] += 1
+            end
+            
+            if any(P_p .< p)
+                n_neurons_enc_change_beh[3] += 1
+            end
+        end
+    end
+    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc_change_beh
+end
+        

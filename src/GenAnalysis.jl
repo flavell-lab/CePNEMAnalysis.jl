@@ -39,6 +39,7 @@ export
     categorize_all_neurons,
     detect_encoding_changes,
     get_enc_stats,
+    get_enc_change_stats,
     # tsne.jl
     make_distance_matrix,
     compute_tsne,

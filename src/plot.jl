@@ -291,6 +291,14 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     tr1 = nothing
     tr2 = nothing
 
+
+    if plot_fit_idx in [:mle, :median]
+        if plot_rev
+            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+        end
+        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
+    end
+
     color_idx = 2
     if plot_rev
         color_idx = 3
@@ -358,11 +366,13 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
         end
     end
 
-    if plot_rev
-        Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+    if !(plot_fit_idx in [:mle, :median])
+        if plot_rev
+            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+        end
+        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
     end
-    Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
-
+    
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1
         vline!([stim * avg_timestep], linewidth=3, label=nothing, color="red")

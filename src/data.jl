@@ -36,7 +36,7 @@ function load_gen_output(datasets, fit_ranges, path_output, path_h5, n_params, n
 
         fit_results[dataset]["sampled_trace_params"] = zeros(length(ranges), n_neurons, n_samples, n_params)
         fit_results[dataset]["sampled_tau_vals"] = zeros(length(ranges), n_neurons, n_samples)
-        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][ranges[end][end]] - data["timestamp_confocal"][801]) / (data["timestamp_confocal"][end][end]-2)
+        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][ranges[end][end]] - data["timestamp_confocal"][801]) / (ranges[end][end]-2)
 
         incomplete_datasets[dataset] = zeros(Bool, length(ranges), n_neurons)
         for (i,rng)=enumerate(ranges)

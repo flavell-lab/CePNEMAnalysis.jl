@@ -480,6 +480,9 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
     list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)
         dict_ = Dict{String,Any}()
+        n_neuron = fit_results[dataset]["num_neurons"]
+        enc_array = zeros(Int, n_neuron, n_b, length(rngs_valid))
+        
         n_neurons_tot_all = 0
         n_neurons_fit_all = 0
         n_neurons_beh = [0,0,0]
@@ -489,7 +492,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             rngs_valid = 1:length(fit_results[dataset]["ranges"])
         end
         P_ranges_valid = [r for r=rngs_valid if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
-        n_neurons_tot_all += fit_results[dataset]["num_neurons"]
+        n_neurons_tot_all += n_neuron
         neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs_valid], BenjaminiHochberg()) .< p) > 0]
         n_neurons_fit_all += length(neurons_fit)
         if length(P_ranges_valid) == 0
@@ -528,12 +531,17 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
                 max_npred = max(max_npred, sum(enc .< p))
             end
             n_neurons_npred[max_npred+1] += 1
+            
+            enc_array[n,1,:] .= v_p .< p
+            enc_array[n,2,:] .= θh_p .< p
+            enc_array[n,3,:] .= P_p .< p
         end
         
         dict_["n_neurons_beh"] = n_neurons_beh
         dict_["n_neurons_npred"] = n_neurons_npred
         dict_["n_neurons_fit_all"] = n_neurons_fit_all
         dict_["n_neurons_tot_all"] = n_neurons_tot_all
+        dict_["enc_array"] = enc_array
         
         result[dataset] = dict_
     end

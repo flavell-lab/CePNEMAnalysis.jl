@@ -476,11 +476,15 @@ end
 
 # TODO: deal with different ranges in different datasets
 function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
-    n_neurons_tot_all = 0
-    n_neurons_fit_all = 0
-    n_neurons_beh = [0,0,0]
-    n_neurons_npred = [0,0,0,0]
+    result = Dict{String,Dict}()
+    list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)
+        dict_ = Dict{String,Any}()
+        n_neurons_tot_all = 0
+        n_neurons_fit_all = 0
+        n_neurons_beh = [0,0,0]
+        n_neurons_npred = [0,0,0,0]
+        
         if rngs_valid == nothing
             rngs_valid = 1:length(fit_results[dataset]["ranges"])
         end
@@ -490,6 +494,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         n_neurons_fit_all += length(neurons_fit)
         if length(P_ranges_valid) == 0
             @warn("Dataset $(dataset) has no time ranges with valid pumping information")
+            push!(list_uid_invalid, dataset)
             continue
         end
         for n=1:fit_results[dataset]["num_neurons"]
@@ -524,10 +529,39 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             end
             n_neurons_npred[max_npred+1] += 1
         end
+        
+        dict_["n_neurons_beh"] = n_neurons_beh
+        dict_["n_neurons_npred"] = n_neurons_npred
+        dict_["n_neurons_fit_all"] = n_neurons_fit_all
+        dict_["n_neurons_tot_all"] = n_neurons_tot_all
+        
+        result[dataset] = dict_
     end
-    return n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
+    
+    result, list_uid_invalid
 end
 
+function get_enc_stats_pool(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
+    n_neurons_tot_all = 0
+    n_neurons_fit_all = 0
+    n_neurons_beh = [0,0,0]
+    n_neurons_npred = [0,0,0,0]
+   
+    dict_enc_stat, list_uid_invalid = get_enc_stats(fit_res_baseline, neuron_b_p,
+        neuron_b_P_ranges_plot; P_diff_thresh=P_diff_thresh, p=p, rngs_valid=rngs_valid)
+    
+    for (k,v) = dict_enc_stat
+        if !(k in list_uid_invalid)
+            dict_ = dict_enc_stat[k]
+            n_neurons_beh .+= dict_["n_neurons_beh"]
+            n_neurons_npred .+= dict_["n_neurons_npred"]
+            n_neurons_fit_all += dict_["n_neurons_fit_all"]
+            n_neurons_tot_all += dict_["n_neurons_tot_all"]
+        end
+    end
+    
+    n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
+end
 
 function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=nothing, p=0.05)
     n_neurons_tot = 0

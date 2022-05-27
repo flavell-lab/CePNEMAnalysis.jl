@@ -481,6 +481,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
     for dataset in keys(fit_results)
         dict_ = Dict{String,Any}()
         n_neuron = fit_results[dataset]["num_neurons"]
+        n_b = 3 # number of behaviors
         enc_array = zeros(Int, n_neuron, n_b, length(rngs_valid))
         
         n_neurons_tot_all = 0

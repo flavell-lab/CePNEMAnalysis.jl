@@ -103,6 +103,50 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     return distance_matrix, deconvolved_activities, dataset_ids, rng_ids, neuron_ids, v_range, θh_range, P_range
 end
 
+
+"""
+Finds the index in `neuron_ids` of a subset of neurons defined by their behavioral encoding, returns a dictionary with keys being the datasets.
+Calling this function is necessary if you only wish to show a subset of neurons in your t-SNE plot.
+
+# Arguments
+- `neuron_ids_tsne`: List of neurons returned by `make_distance_matrix`.
+- `neuron_categorization`: Dictionary of behavioral encoding returned by `categorize_all_neurons`
+- `datasets`: Array of datasets to use.
+- `rng`: Scalar indicating the time segment of interest.
+- `beh_category`: String indicating the behavior of interest, e.g. "v" for velocity, "θh" for head curvature, "P" for pumping.
+- `beh_subcategory` (optional, default is "all"): String indicating the behavioral subcategory of interest, e.g. "fwd" for forward neurons, "ventral" for ventral neurons.
+"""
+function find_subset_idx(neuron_ids_tsne, neuron_categorization, datasets, rng, beh_category; beh_subcategory="all")
+    subset_idx_all = Dict()
+    
+    for dataset = datasets
+        target = neuron_categorization[dataset][rng][beh_category][beh_subcategory]
+        subset_idx = []
+
+        if rng == 1
+            idx_start = 0
+        elseif rng == 2
+            idx_start = length(neuron_categorization[dataset][rng-1]["all"])
+        elseif rng == 3
+            idx_start = length(neuron_categorization[dataset][rng-2]["all"]) + length(neuron_categorization[dataset][rng-1]["all"])
+        elseif rng == 4
+            idx_start = length(neuron_categorization[dataset][rng-3]["all"]) + length(neuron_categorization[dataset][rng-2]["all"]) + length(neuron_categorization[dataset][rng-1]["all"])
+        end
+        
+        for i = 1:length(neuron_categorization[dataset][rng]["all"])
+            idx = idx_start+i
+            if issubset(neuron_ids_tsne[idx], target)
+                push!(subset_idx, idx)
+            end
+        end
+        
+        subset_idx_all[dataset] = subset_idx
+    end
+    
+    return subset_idx_all
+end
+
+
 """
 Runs t-SNE algorithm on `distance_matrix`, returns solution with lowest KL-divergence.
 
@@ -111,10 +155,19 @@ Runs t-SNE algorithm on `distance_matrix`, returns solution with lowest KL-diver
 - `n_tsne`: Number of t-SNE attempts to run (per perplexity value)
 - `perplexities`: Array of perplexity values to try
 - `n_iters`: Number of iterations to run per t-SNE algorithm
+- `subset` (optional, default is false): Whether you wish to only plot t-SNE with a subset of the neurons
+- `subset_idx` (optional, default is an empty set): The list of neurons that you wish to plot t-SNE with for a particular dataset (i.e. subset_idx_all[dataset]), returned by `find_subset_idx`.
 """
-function compute_tsne(distance_matrix, n_tsne, perplexities, n_iters)
+function compute_tsne(distance_matrix, n_tsne, perplexities, n_iters; subset=false, subset_idx=[])
     all_kl_best = []
     all_tsne_best = []
+    
+    if subset
+        distance_matrix = distance_matrix[subset_idx, subset_idx]
+    else
+        distance_matrix = distance_matrix
+    end
+    
     for perplexity in perplexities
         kl_best = Inf
         tsne_best = nothing

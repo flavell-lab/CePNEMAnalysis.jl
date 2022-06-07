@@ -148,10 +148,15 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 - `sizes` (optiona, default `[9,14,14,12]`): The marker sizes. If `label_v_shapes` is false, only the first element matters.
 - `s_rng`: Range of `s` values to consider.
 - `s_res`: Resolution of different `s` values.
+- `modulation` (optional, default `false`): Whether you want to highlight special neurons by their response to neuromodulation/ other properties.
+- `c_modulated` (optional, default `RGB.(0, 0, 0)`): The colors of special neurons listed in modulated_neurons.
+- `modulated_neurons` (optional, default an empty set): The list of special neurons that you wish to highlight.  
 """
 function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
         velocity_colors=[RGB.(0,0.9,1), RGB.(0.5,0.6,1), RGB.(0,0,1)], θh_colors=[RGB.(1,0.7,0.3), RGB.(1,0.3,0.7), RGB.(0.7,0,0)], P_colors=[RGB.(0,1,0), RGB.(0.7,1,0), RGB.(0,0.5,0)], 
-        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[6,10,10,8], s_rng=[0,7], s_res=100)
+        c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[6,10,10,8], s_rng=[0,7], s_res=100, 
+        modulation=false, c_modulated=RGB.(0,0,0), modulated_neurons=[])
+            
     if label_v_shapes
         @assert(!isnothing(neuron_categorization), "Neuron categories must exist to label velocity with shapes.")
     end
@@ -248,6 +253,12 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
         else
             shape_idx = 1
         end
+                
+        if modulation
+            if issubset(n, modulated_neurons)
+                c = c_modulated
+            end
+        end
         
         if label_neurons
             Plots.scatter!([tsne_dist[i,1]], [tsne_dist[i,2]], label=nothing, color=c, markerstrokecolor=c, markersize=sizes[shape_idx], markershape=shapes[shape_idx], series_annotations=Plots.text.([n], :bottom, 7))
@@ -255,6 +266,7 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
             Plots.scatter!([tsne_dist[i,1]], [tsne_dist[i,2]], label=nothing, color=c, markerstrokecolor=c, markersize=sizes[shape_idx], markershape=shapes[shape_idx])
         end
     end
+            
     if !plot_axes
         Plots.plot!(xaxis=nothing, yaxis=nothing)
     end

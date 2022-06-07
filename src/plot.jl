@@ -61,14 +61,66 @@ function plot_deconvolved_heatmap(deconvolved_activity, v_ranges_plot, θh_range
     Plots.plot!()
 end
 
-# TODO: finish this function
-function plot_deconvolved_neural_activity(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200, pos_θh=[100], pos_P=[100])
+"""
+Plots deconvolved neural activity.
+
+# Arguments:
+- `deconvolved_activity`: Deconvolved neural activity
+- `v_ranges_plot`: velocity ranges
+- `θh_ranges_plot`: head curvature ranges
+- `P_ranges_plot`: feeding ranges
+- `axis`: variable to plot. Can be 1 (velocity), 2 (head curvature), or 3 (feeding)
+- `res` (optional, default 200): Resolution of plot
+- `plot_size` (optional, default `(700,350)`): Size of plot.
+- `init` (optional, default `true`): Initialize a new plot.
+"""
+function plot_deconvolved_neural_activity!(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200, plot_size=(700,350), init=true)
+    len = res
     if axis == 1
-        dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], 2, res=len), dims=1), dims=1)
-    elseif axis == 2
-        heatmap(v_rng, θh_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :red, :magenta]), clim=(-1,3))
-    elseif axis == 3
-        heatmap(v_rng, P_rng, transpose(dropdims(median(make_deconv_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len), dims=1), dims=1)), c=cgrad([:black, :green, :turquoise]), clim=(-1,3))
+        axis = 2
+        pos = [res÷2]
+    else
+        pos = [1,res]
+    end
+    if init
+        Plots.plot(size=plot_size)
+    end
+    v_rng = collect(range(v_ranges_plot[dataset][rngs[1]][1], v_ranges_plot[dataset][rngs[1]][2], length=Int(len/2)))
+    append!(v_rng, range(v_ranges_plot[dataset][rngs[1]][3], v_ranges_plot[dataset][rngs[1]][4], length=Int(len/2)))
+    
+    
+    P_rng = range(P_ranges_plot[dataset][1], P_ranges_plot[dataset][2], length=len)
+    for rng in rngs
+        if axis != 3
+            hmap = make_deconvolved_heatmap(deconvolved_activity_plot[dataset][rng][neuron], axis, res=len)
+        else
+            hmap = permutedims(make_deconvolved_heatmap(deconv_P[neuron], axis, res=len), [1,3,2])
+        end
+        
+        println(size(hmap))
+        for idx in pos
+            x = hmap[:,:,idx]
+            med_x = dropdims(median(x, dims=1), dims=1)
+            l = (idx == 1) ? "dorsal" : "ventral"
+            if length(pos) == 1
+                l = ""
+            end
+            if length(rngs) == 2 && dataset in heatstim_datasets
+                l *= " " * ((rng == 1) ? "pre-stim" : "post-stim")
+            end
+
+            if axis != 3
+                Plots.plot!(v_rng, med_x, ribbon=([med_x[i] - percentile(x[:,i], 5) for i=1:len], [percentile(x[:,i], 95) - med_x[i] for i=1:len]), label=l, legend=:topright)
+            else
+                Plots.plot!(P_rng, med_x, ribbon=([med_x[i] - percentile(x[:,i], 5) for i=1:len], [percentile(x[:,i], 95) - med_x[i] for i=1:len]), label=nothing, color=palette(:default)[3])
+            end
+
+        end
+    end
+    if axis != 3
+        xlabel!("velocity", bottom_margin=3mm)
+    else
+        xlabel!("feeding")
     end
 end
 
@@ -285,7 +337,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     avg_timestep = fit_results[dataset]["avg_timestep"] / 60
 
     trace = fit_results[dataset]["trace_array"][neuron,:]
-    all_rev = [t - rngs_fit[1][1] + 1 for t in rngs_fit[1][1]:rngs_fit[end][end] if fit_results[dataset]["v"][t] < 0]
+    all_rev = [t for t in rngs_fit[1][1]:rngs_fit[end][end] if fit_results[dataset]["v"][t] < 0]
     Plots.plot()
 
     tr1 = nothing
@@ -300,7 +352,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     end
 
     color_idx = 2
-    if plot_rev
+    if plot_rev && !(plot_fit_idx in [:mle, :median])
         color_idx = 3
     end
     if plot_fit_idx == :mle
@@ -372,7 +424,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
         end
         Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
     end
-    
+
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1
         vline!([stim * avg_timestep], linewidth=3, label=nothing, color="red")

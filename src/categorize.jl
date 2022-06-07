@@ -574,6 +574,8 @@ end
 
 function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=nothing, p=0.05)
     n_neurons_tot = 0
+    n_neurons_enc = 0
+    n_neurons_nenc_enc_change = 0
     n_neurons_enc_change_all = 0
     n_neurons_enc_change_beh = [0,0,0]
     for dataset in datasets
@@ -587,7 +589,15 @@ function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=no
         end
         
         neurons_ec = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([enc_change_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
+        
+        rngs_enc = [r[1] for r in rngs]
+        append!(rngs_enc, [r[2] for r in rngs])
+        rngs_enc = unique(rngs_enc)
+        neurons_encode = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs_enc], BenjaminiHochberg()) .< p) > 0]
+
+        n_neurons_enc += length(neurons_encode)        
         n_neurons_enc_change_all += length(neurons_ec)
+        n_neurons_nenc_enc_change += length([n for n in neurons_ec if !(n in neurons_encode)])
         
         n_neurons_tot += fit_results[dataset]["num_neurons"]
 
@@ -608,6 +618,6 @@ function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=no
             end
         end
     end
-    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc_change_beh
+    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc, n_neurons_nenc_enc_change, n_neurons_enc_change_beh
 end
         

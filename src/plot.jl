@@ -282,17 +282,35 @@ Plots histogram of tau (half-decay) times for all encoding neurons.
 - `t_max` (optional, default 60): Maximum time point to plot
 - `use_cdf` (optional, default true): Whether to use CDF format instead of PDF
 - `percent` (optional, default 95): If using CDF format, credible range to show
+- `rngs_valid` (optional): If set to a list of ranges, only attempt to use those ranges for computation.
 """
-function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, percent=95)
+function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, percent=95, rngs_valid=nothing)
     s_vals = []
     s_vals_min = []
     s_vals_max = []
+    delta = (100-percent)/2
     for dataset in keys(fit_results)
-        for rng in 1:length(fit_results[dataset]["ranges"])
-            delta = (100-percent)/2
-            append!(s_vals_min, [percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], delta) for n in neuron_categorization[dataset][rng]["all"]])
-            append!(s_vals, dropdims(median(fit_results[dataset]["sampled_tau_vals"][rng,neuron_categorization[dataset][rng]["all"],:], dims=2), dims=2))
-            append!(s_vals_max, [percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], 100-delta) for n in neuron_categorization[dataset][rng]["all"]])
+        if isnothing(rngs_valid)
+            rngs_valid_use = 1:length(fit_results[dataset]["ranges"])
+        else
+            rngs_valid_use = rngs_valid
+        end
+        for n in 1:fit_results[dataset]["num_neurons"]
+            rngs_usable = [rng for rng in rngs_valid_use if n in neuron_categorization[dataset][rng]["all"]]
+            if length(rngs_usable) == 0
+                continue
+            end
+            sv_min = []
+            sv = []
+            sv_max = []
+            for rng in rngs_usable
+                append!(sv_min, percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], delta))
+                append!(sv, median(fit_results[dataset]["sampled_tau_vals"][rng,n,:]))
+                append!(sv_max, percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], 100-delta))
+            end
+            push!(s_vals_min, median(sv_min))
+            push!(s_vals, median(sv))
+            push!(s_vals_max, median(sv_max))
         end
     end
     if use_cdf
@@ -462,8 +480,9 @@ Plots the heatmap of the projection of posterior particles of a neuron into a 2D
 - `color` (optional, default `palette(:default)[2]`): Color of the heatmap
 - `x_rng` (optional, default `-3:0.1:3`): `x`-axis range
 - `y_rng` (optional, default `-3:0.1:3`): `y`-axis range
+- `rgb` (optional, default `false`): If set, return RGB histogram and x and y ranges, instead of a plot.
 """
-function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2], x_rng=-3:0.1:3, y_rng=-3:0.1:3)
+function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2], x_rng=-3:0.1:3, y_rng=-3:0.1:3, rgb=false)
     if init
         Plots.plot()
     end
@@ -472,8 +491,53 @@ function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, para
  
 
     hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng))
-    Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
+    if plot
+        return Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
+    else
+        return hist_fit.weights ./ maximum(hist_fit.weights) .* color, x_rng, y_rng
+    end
 end
 
+"""
+Plots posterior RGB.
 
+# Arguments:
+- `posterior`: RGB posterior.
+- `x_rng`: x-range of the posterior
+- `y_rng`: y-range of the posterior
+- `param_x`: x parameter
+- `param_y`: y parameter
+"""
+function plot_posterior_rgb(posterior, x_rng, y_rng, param_x, param_y)
+    params = [param_x, param_y]
+    labels = ["", ""]
+    for (i,param)=enumerate(params)
+        if param == 1
+            labels[i] = "velocity threshold"
+        elseif param == 2
+            labels[i] = "velocity"
+        elseif param == 3
+            labels[i] = "head curvature"
+        elseif param == 4
+            labels[i] = "feeding"
+        elseif param == 5
+            labels[i] = "velocity rectification"
+        elseif param == 6
+            labels[i] = "initial neural activity"
+        elseif param == 7
+            labels[i] = "timescale"
+        elseif param == 8
+            labels[i] = "baseline"
+        elseif param == 9
+            labels[i] = "model uncertainty timescale"
+        elseif param == 10
+            labels[i] = "uncertainty level"
+        elseif param == 11
+            labels[i] = "noise level"
+        end
+    end
+    Plots.plot(x_rng, y_rng, posterior, reverse=true)
+    xlabel!(labels[1])
+    ylabel!(labels[2])
+end
 

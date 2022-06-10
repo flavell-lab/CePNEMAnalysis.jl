@@ -556,8 +556,8 @@ function get_enc_stats_pool(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, 
     n_neurons_beh = [0,0,0]
     n_neurons_npred = [0,0,0,0]
    
-    dict_enc_stat, list_uid_invalid = get_enc_stats(fit_res_baseline, neuron_b_p,
-        neuron_b_P_ranges_plot; P_diff_thresh=P_diff_thresh, p=p, rngs_valid=rngs_valid)
+    dict_enc_stat, list_uid_invalid = get_enc_stats(fit_results, neuron_p,
+        P_ranges; P_diff_thresh=P_diff_thresh, p=p, rngs_valid=rngs_valid)
     
     for (k,v) = dict_enc_stat
         if !(k in list_uid_invalid)

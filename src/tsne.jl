@@ -15,7 +15,8 @@ Makes a distance matrix (compatible with t-SNE) of neurons between multiple data
     If `true`, could result in unequal number of ranges between datasets.
 - `n_particles` (optional, default `2048`): Number of particles per neuron in the Gen fits
 """
-function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ranges, neuron_categorization; s_weight=2, v_weight=1, min_P_rng=[0,2], use_all_ranges=false, n_particles=2048)
+function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ranges, neuron_categorization; s_weight=2, v_weight=1, min_P_rng=[0,2], use_all_ranges=false, rngs_valid=nothing)
+    n_particles = size(fit_results[datasets[1]]["sampled_trace_params"], 3)
     rngs_use = Dict()
     idx_arr = Dict()
     idx_last = 0
@@ -25,10 +26,14 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     @showprogress for (i, dataset) = enumerate(datasets)
         rng_use = []
         rng_qual = []
-        for (j,rng) = enumerate(fit_results[dataset]["ranges"])
-            if P_ranges[dataset][j][1] <= min_P_rng[1] && P_ranges[dataset][j][2] >= min_P_rng[2]
-                push!(rng_use, j)
-                push!(rng_qual, P_ranges[dataset][j][2] - P_ranges[dataset][j][1])
+        rngs_valid_use = 1:length(fit_results[dataset]["ranges"])
+        if !isnothing(rngs_valid)
+            rngs_valid_use = rngs_valid
+        end
+        for (j,rng) = enumerate(rngs_valid_use)
+            if P_ranges[dataset][rng][1] <= min_P_rng[1] && P_ranges[dataset][rng][2] >= min_P_rng[2]
+                push!(rng_use, rng)
+                push!(rng_qual, P_ranges[dataset][rng][2] - P_ranges[dataset][rng][1])
             end
         end
         if isempty(rng_use)
@@ -41,6 +46,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
             rngs_use[dataset] = [rng_use[argmax(rng_qual)]]
         end
 
+        println(rngs_use[dataset])
         idx_arr[dataset] = []
         for rng in rngs_use[dataset]
             push!(idx_arr[dataset], idx_last)
@@ -62,7 +68,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     neuron_ids = zeros(Int, idx_last)
 
     deconvolved_activities = zeros(idx_last, n_particles, length(v_range), length(θh_range), length(P_range))
-    
+
     for dataset = datasets
         if !haskey(rngs_use, dataset)
             continue
@@ -85,7 +91,7 @@ function make_distance_matrix(datasets, fit_results, v_ranges, θh_ranges, P_ran
     for idx1=1:size(distance_matrix,1)-1
         for idx2=idx1+1:size(distance_matrix,1)
             n_cat = neuron_p_vals(deconvolved_activities[idx1,:,:,:,:], deconvolved_activities[idx2,:,:,:,:], 0, compute_p=false)
-            
+
             distance_matrix[idx1,idx2] = v_weight * sum([sum(n_cat["v_encoding"][i,i+1,:,:]) for i=1:3]) * v_STD / (v_range[4] - v_range[1])
             distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_θh_encoding_act"]) * θh_STD / (θh_range[2] - θh_range[1])
             distance_matrix[idx1,idx2] += 2 * sum(n_cat["rev_θh_encoding_inh"]) * θh_STD / (θh_range[2] - θh_range[1])

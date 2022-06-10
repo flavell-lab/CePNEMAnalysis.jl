@@ -12,6 +12,7 @@ using Plots.PlotMeasures
 using TSne
 using ColorSchemes
 using MultipleTesting
+using MultivariateStats
 
 include("data.jl")
 include("dist.jl")
@@ -39,6 +40,7 @@ export
     categorize_all_neurons,
     detect_encoding_changes,
     get_enc_stats,
+    get_enc_stats_pool,
     get_enc_change_stats,
     # tsne.jl
     make_distance_matrix,
@@ -49,5 +51,8 @@ export
     plot_tsne,
     plot_tau_histogram,
     plot_neuron,
-    plot_posterior_heatmap!
+    plot_posterior_heatmap!,
+    plot_posterior_rgb,
+    # pca.jl
+    extrapolate_neurons
 end # module

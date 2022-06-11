@@ -65,30 +65,26 @@ end
 Plots deconvolved neural activity.
 
 # Arguments:
+- `dataset`
+- `rngs`: Ranges to plot
 - `deconvolved_activity`: Deconvolved neural activity
 - `v_ranges_plot`: velocity ranges
 - `θh_ranges_plot`: head curvature ranges
 - `P_ranges_plot`: feeding ranges
-- `axis`: variable to plot. Can be 1 (velocity), 2 (head curvature), or 3 (feeding)
+- `axis`: variable to plot. Can be 2 to plot velocity while varying head curvature, or 3 to plot feeding.
 - `res` (optional, default 200): Resolution of plot
 - `plot_size` (optional, default `(700,350)`): Size of plot.
 - `init` (optional, default `true`): Initialize a new plot.
+- `len`: Length to extrapolate other behaviors
+- `pos`: Position of other behaviors to use
 """
-function plot_deconvolved_neural_activity!(deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis; res=200, plot_size=(700,350), init=true)
-    len = res
-    if axis == 1
-        axis = 2
-        pos = [res÷2]
-    else
-        pos = [1,res]
-    end
-    if init
-        Plots.plot(size=plot_size)
-    end
+function plot_deconvolved_neural_activity!(dataset, rngs, deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis;
+        res=200, plot_size=(700,350), init=true, len=200, pos=[100])
+
     v_rng = collect(range(v_ranges_plot[dataset][rngs[1]][1], v_ranges_plot[dataset][rngs[1]][2], length=Int(len/2)))
     append!(v_rng, range(v_ranges_plot[dataset][rngs[1]][3], v_ranges_plot[dataset][rngs[1]][4], length=Int(len/2)))
-    
-    
+
+
     P_rng = range(P_ranges_plot[dataset][1], P_ranges_plot[dataset][2], length=len)
     for rng in rngs
         if axis != 3
@@ -96,7 +92,7 @@ function plot_deconvolved_neural_activity!(deconvolved_activity, v_ranges_plot, 
         else
             hmap = permutedims(make_deconvolved_heatmap(deconv_P[neuron], axis, res=len), [1,3,2])
         end
-        
+
         println(size(hmap))
         for idx in pos
             x = hmap[:,:,idx]
@@ -117,11 +113,7 @@ function plot_deconvolved_neural_activity!(deconvolved_activity, v_ranges_plot, 
 
         end
     end
-    if axis != 3
-        xlabel!("velocity", bottom_margin=3mm)
-    else
-        xlabel!("feeding")
-    end
+    Plots.plot!()
 end
 
 """
@@ -346,13 +338,14 @@ Plots a neuron and model fits to that neuron.
 - `plot_rev` (optional, default `false`): Plot reversal events.
 - `plot_stim` (optional, default `false`): Plot the heat stim.
 - `plot_size` (optional, default `(700,350)`): Size of the plot
-- `y_rng` (optional, default `(-1.5,3.5)`): `y`-range of the plot
+- `x_rng` (optional, default `0:3:18`): `x`-range of the plot
+- `y_rng` (optional, default `-2.:1.:4.`): `y`-range of the plot
 - `linewidth` (optional, default 2): Width of neuron line
 - `contrast` (optional, default 99): If `use_heatmap` is true, contrast of heatmap
 - `idx_split` (optional, default `[1:1600]`): Ranges to fit separately (for resetting EWMA purposes). Must be contiguous.
 """
 function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; plot_rng_only::Bool=true, plot_fit_idx=nothing, use_heatmap::Bool=false, 
-        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=(-1.5,3.5), linewidth=2, contrast=99, idx_split=[1:1600])
+        heatmap_hist_step::Real=0.01, plot_rev::Bool=false, plot_stim::Bool=false, plot_size=(700,350), y_rng=-2.:1.:4., x_rng=0:3:18, linewidth=2, contrast=99, idx_split=[1:1600])
     max_t = plot_rng_only ? fit_results[dataset]["ranges"][rng][end] - fit_results[dataset]["ranges"][rng][1] + 1 : idx_split[end][end] - idx_split[1][1] + 1
 
 
@@ -373,12 +366,14 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     tr1 = nothing
     tr2 = nothing
 
+    x_rng_plot = avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end])
+
 
     if plot_fit_idx in [:mle, :median]
         if plot_rev
-            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:tab10)[2], label=nothing)
         end
-        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
+        Plots.plot!(x_rng_plot, trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:tab10)[1], size=plot_size)
     end
 
     color_idx = 2
@@ -396,12 +391,12 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
             end
             f[rng_fit .- f0] .= model_nl8(rng_fit[end] - rng_fit[1] + 1, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
         end
-        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), f, linewidth=2, label=nothing, color=palette(:default)[color_idx])
+        Plots.plot!(x_rng_plot, f, linewidth=2, label=nothing, color=palette(:tab10)[color_idx])
     elseif !isnothing(plot_fit_idx)
         plot_idx = plot_fit_idx == :median ? size(fit_results[dataset]["sampled_trace_params"], 3) : plot_fit_idx
         if use_heatmap || plot_fit_idx == :median
             y_min = y_rng[1]
-            y_max = y_rng[2]
+            y_max = y_rng[end]
             y_fit_array = zeros(max_t, length(plot_idx))
 
             for (idx, i) = enumerate(plot_idx)
@@ -419,7 +414,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
 
             if plot_fit_idx == :median
                 m = dropdims(median(y_fit_array, dims=2), dims=2)
-                Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), m, linewidth=2, label=nothing, color=palette(:default)[color_idx])
+                Plots.plot!(x_rng_plot, m, linewidth=2, label=nothing, color=palette(:tab10)[color_idx])
             else
                 y_bins = y_min:heatmap_hist_step:y_max
                 y_hist_array = zeros(max_t, length(y_bins) - 1)
@@ -427,8 +422,8 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
                     hist_fit = fit(Histogram, y_fit_array[t,:],  y_bins)
                     y_hist_array[t,:] = hist_fit.weights
                 end
-                heatmap!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), y_bins[1:end-1] .+ 0.005, y_hist_array', 
-                        c=cgrad([:white, palette(:default)[color_idx], :black]), 
+                heatmap!(x_rng_plot, y_bins[1:end-1] .+ 0.005, y_hist_array', 
+                        c=cgrad([:white, palette(:tab10)[color_idx], :black]), 
                         clim=(percentile(reshape(y_hist_array, length(y_hist_array)),(100-contrast)), percentile(reshape(y_hist_array, length(y_hist_array)),contrast)), colorbar=nothing, left_margin=5mm)
             end
         else
@@ -442,7 +437,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
                     end
                     f[rng_fit .- f0] .= model_nl8(rng_fit[end] - rng_fit[1] + 1, params..., fit_results[dataset]["v"][rng_fit], fit_results[dataset]["θh"][rng_fit], fit_results[dataset]["P"][rng_fit])
                 end
-                Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), f, linewidth=2, label=nothing, color=palette(:default)[color_idx])
+                Plots.plot!(x_rng_plot, f, linewidth=2, label=nothing, color=palette(:tab10)[color_idx])
                 color_idx += 1
             end
         end
@@ -450,20 +445,18 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
 
     if !(plot_fit_idx in [:mle, :median])
         if plot_rev
-            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:default)[2], label=nothing)
+            Plots.vline!(avg_timestep .* all_rev, opacity=0.1+0.3*plot_rng_only, color=palette(:tab10)[2], label=nothing)
         end
-        Plots.plot!(avg_timestep .* (rngs_fit[1][1]:rngs_fit[end][end]), trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:default)[1], size=plot_size)
+        Plots.plot!(x_rng_plot, trace[rngs_fit[1][1]:rngs_fit[end][end]], label=nothing, linewidth=linewidth, color=palette(:tab10)[1], size=plot_size)
     end
 
     if plot_stim
         stim = fit_results[dataset]["ranges"][1][end]+1
         vline!([stim * avg_timestep], linewidth=3, label=nothing, color="red")
     end
-    xlabel!("time (min)")
-    ylabel!("neuron activity")
-    yaxis!(y_rng)
+    Plots.plot!(xaxis = ("time (min)", (x_rng[1], x_rng[end]), x_rng, font(7, "Arial")),
+        yaxis = ("neuron activity (AU)", (y_rng[1], y_rng[end]), y_rng, font(7, "Arial"))), x_rng_plot
 end
-
 """
 Plots the heatmap of the projection of posterior particles of a neuron into a 2D susbspace.
 

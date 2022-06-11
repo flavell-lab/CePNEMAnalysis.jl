@@ -38,6 +38,7 @@ export
     neuron_p_vals,
     categorize_neurons,
     categorize_all_neurons,
+    get_neuron_category,
     detect_encoding_changes,
     get_enc_stats,
     get_enc_stats_pool,
@@ -48,6 +49,7 @@ export
     # plot.jl
     make_deconvolved_heatmap,
     plot_deconvolved_heatmap,
+    plot_deconvolved_neural_activity!,
     plot_tsne,
     plot_tau_histogram,
     plot_neuron,

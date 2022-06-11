@@ -427,14 +427,14 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, 
         encoding_change_p_vals[dataset] = Dict()
 
         for i1 = 1:n_ranges-1
-            t1 = rngs[i1]
+            t1 = rngs[dataset][i1]
             range1 = fit_results[dataset]["ranges"][t1]
             v_range_1 = compute_range(v[range1], beh_percent, 1)
             θh_range_1 = compute_range(θh[range1], beh_percent, 2)
             P_range_1 = compute_range(P[range1], beh_percent, 3)
 
             for i2 = i1+1:n_ranges
-                t2 = rngs[i2]
+                t2 = rngs[dataset][i2]
                 range2 = fit_results[dataset]["ranges"][t2]
                 v_range_2 = compute_range(v[range2], beh_percent, 1)
                 θh_range_2 = compute_range(θh[range2], beh_percent, 2)

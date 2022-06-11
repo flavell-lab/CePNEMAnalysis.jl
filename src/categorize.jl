@@ -410,14 +410,15 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `threshold`: Threshold for encoding change difference
+- `rngs`: Dictionary of which ranges to use per dataset
 - `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold; beh_percent=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, rngs; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
     @showprogress for dataset in keys(fit_results)
         n_neurons = fit_results[dataset]["num_neurons"]
-        n_ranges = length(fit_results[dataset]["ranges"])
+        n_ranges = length(rngs[dataset])
         v = fit_results[dataset]["v"]
         θh = fit_results[dataset]["θh"]
         P = fit_results[dataset]["P"]
@@ -425,13 +426,15 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold; 
         encoding_changes[dataset] = Dict()
         encoding_change_p_vals[dataset] = Dict()
 
-        for t1 = 1:n_ranges-1
+        for i1 = 1:n_ranges-1
+            t1 = rngs[i1]
             range1 = fit_results[dataset]["ranges"][t1]
             v_range_1 = compute_range(v[range1], beh_percent, 1)
             θh_range_1 = compute_range(θh[range1], beh_percent, 2)
             P_range_1 = compute_range(P[range1], beh_percent, 3)
 
-            for t2 = t1+1:n_ranges
+            for i2 = i1+1:n_ranges
+                t2 = rngs[i2]
                 range2 = fit_results[dataset]["ranges"][t2]
                 v_range_2 = compute_range(v[range2], beh_percent, 1)
                 θh_range_2 = compute_range(θh[range2], beh_percent, 2)

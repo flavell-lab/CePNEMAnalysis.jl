@@ -44,11 +44,22 @@ function make_distance_matrix(models)
             if !(j in keys(norms))
                 norms[j] = sum(models[j,:] .^ 2)
             end
-            distance_matrix[i,j] = sum(models[i,:] .* models[j,:]) / sqrt(norms[i] * norms[j])
+            distance_matrix[i,j] = 1 - sum(models[i,:] .* models[j,:]) / sqrt(norms[i] * norms[j])
             distance_matrix[j,i] = distance_matrix[i,j]
         end
     end
     return distance_matrix
 end
 
+function invert_id(id, ids)
+    # ignore ranges
+    return [i for i=1:length(ids) if ids[i][1] == id[1] && ids[i][3] == id[2]][1]
+end
 
+function invert_array(arr)
+    inv = zeros(eltype(arr), length(arr))
+    for i=1:length(inv)
+        inv[arr[i]] = i
+    end
+    return inv
+end

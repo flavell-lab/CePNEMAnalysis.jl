@@ -19,6 +19,7 @@ include("dist.jl")
 include("categorize.jl")
 include("plot.jl")
 include("tsne.jl")
+include("cluseter.jl")
 
 export
     # data.jl
@@ -60,5 +61,11 @@ export
     plot_posterior_heatmap!,
     plot_posterior_rgb,
     # pca.jl
-    extrapolate_neurons
+    extrapolate_neurons,
+    make_distance_matrix,
+    invert_id,
+    invert_array,
+    # cluster.jl
+    cluster_dist,
+    dendrocolor
 end # module

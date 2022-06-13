@@ -687,7 +687,7 @@ function get_consistent_neurons(datasets, fit_results, neuron_categorization, di
             err = mean((fit[rng_test] .- fit_results[dataset]["trace_array"][n,rng_test])[ewma_skip+1:end] .^ 2)
             err_control = mean(fit_results[dataset]["trace_array"][n,rng_test][ewma_skip+1:end].^2)
             
-            if err > err_thresh * err_control
+            if err > err_thresh * err_control || length(ps_keep) == 0
                 push!(inconsistent_neurons[dataset], n)
             else
                 push!(consistent_neurons[dataset], n)

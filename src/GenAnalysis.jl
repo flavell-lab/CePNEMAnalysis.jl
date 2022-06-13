@@ -20,6 +20,7 @@ include("categorize.jl")
 include("plot.jl")
 include("tsne.jl")
 include("cluster.jl")
+include("pca.jl")
 
 export
     # data.jl

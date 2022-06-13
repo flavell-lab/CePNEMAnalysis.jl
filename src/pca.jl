@@ -1,38 +1,34 @@
-function extrapolate_neurons(datasets, fit_results, neuron_categorization, n_neurons_tot, P_ranges; P_diff_thresh=0.5, rngs_valid=nothing)
-    P_diff_thresh = 0.5
-    all_params = zeros(4*n_neurons_tot, 11)
+function extrapolate_neurons(consistent_neurons, parameters, rngs_use, fit_results)
+    all_params = zeros(sum([length(v) for v in values(consistent_neurons)]), 11)
     ids = []
-    all_behs = zeros(1600 * length(datasets_baseline), 5)
+    all_behs = zeros(1600 * length(keys(consistent_neurons)), 5)
     idx = 1
     idx_beh = 1
     rngs_valid = [5,6]
-    for dataset in datasets_baseline
-        rng = argmax([P_ranges[dataset][r][2] - P_ranges[dataset][r][1] for r=rngs_valid]) + rngs_valid[1] - 1
-        if P_ranges[dataset][rng][2] - P_ranges[dataset][rng][1] < P_diff_thresh
-            @warn("Skipping $(dataset) due to insufficient pumping variance")
-            continue
+    @showprogress for dataset in keys(consistent_neurons)
+        rng = rngs_use[dataset]
+        for n=consistent_neurons[dataset]
+            all_params[idx,:] .= parameters[dataset][n]
+            push!(ids, (dataset, rng, n))
+            idx += 1
         end
-        for n=1:fit_results[dataset]["num_neurons"]
-            if n in neuron_categorization[dataset][rng]["all"]
-                all_params[idx,:] .= dropdims(median(fit_results[dataset]["sampled_trace_params"][rng, n, :, :], dims=1), dims=1)
-                push!(ids, (dataset, rng, n))
-                idx += 1
-            end
-        end
-        r = fit_results[dataset]["ranges"][rng]
-        all_behs[idx_beh:idx_beh+length(r)-1, 1] .= fit_results[dataset]["v"][r]
-        all_behs[idx_beh:idx_beh+length(r)-1, 2] .= fit_results[dataset]["θh"][r] .* (2*θh_pos_is_ventral[dataset]-1)
-        all_behs[idx_beh:idx_beh+length(r)-1, 3] .= fit_results[dataset]["P"][r]
-        all_behs[idx_beh:idx_beh+length(r)-1, 4] .= fit_results[dataset]["ang_vel"][r] .* (2*θh_pos_is_ventral[dataset]-1)
-        all_behs[idx_beh:idx_beh+length(r)-1, 5] .= fit_results[dataset]["curve"][r]
-        idx_beh += length(r)
+        len = length(fit_results[dataset]["v"])
+        all_behs[idx_beh:idx_beh+len-1, 1] .= fit_results[dataset]["v"]
+        all_behs[idx_beh:idx_beh+len-1, 2] .= fit_results[dataset]["θh"] .* (2*θh_pos_is_ventral[dataset]-1)
+        all_behs[idx_beh:idx_beh+len-1, 3] .= fit_results[dataset]["P"]
+        all_behs[idx_beh:idx_beh+len-1, 4] .= fit_results[dataset]["ang_vel"] .* (2*θh_pos_is_ventral[dataset]-1)
+        all_behs[idx_beh:idx_beh+len-1, 5] .= fit_results[dataset]["curve"]
+        idx_beh += len
     end
     all_params = all_params[1:idx-1,:]
     all_behs = all_behs[1:idx_beh-1,:]
-    
+
     models = zeros(size(all_params,1), size(all_behs,1))
     for i=1:size(models,1)
-        models[i,:] .= model_nl8(size(all_behs,1), all_params[i,1:8]..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
+        ps = deepcopy(all_params[i,1:8])
+        ps[3] = ps[3] * (2*θh_pos_is_ventral[ids[i][1]]-1)
+        ps[6] = 0
+        models[i,:] .= model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
     end
     return models, ids, all_behs, all_params, fit(PCA, models)
 end

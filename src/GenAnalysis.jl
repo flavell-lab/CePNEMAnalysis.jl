@@ -23,6 +23,7 @@ include("tsne.jl")
 export
     # data.jl
     load_gen_output,
+    get_pumping_ranges,
     # dist.jl
     update_cmap!,
     evaluate_pdf_xgiveny!,
@@ -30,6 +31,7 @@ export
     kl_div,
     overlap_index,
     prob_P_greater_Q,
+    project_posterior,
     # categorize.jl
     deconvolved_model_nl8,
     compute_range,
@@ -43,6 +45,8 @@ export
     get_enc_stats,
     get_enc_stats_pool,
     get_enc_change_stats,
+    get_consistent_neurons,
+    encoding_summary_stats,
     # tsne.jl
     make_distance_matrix,
     compute_tsne,

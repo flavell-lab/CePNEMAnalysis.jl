@@ -186,3 +186,15 @@ function prob_P_greater_Q(P,Q)
 
     return p_greater_q / (P_tot * Q_tot)
 end
+
+
+function project_posterior(sampled_trace_params, params_rm; percentile_thresh=1)
+    if length(params_rm) == 0
+        return median(sampled_trace_params, dims=1)[1,:]
+    end
+    dists = [sum(sampled_trace_params[i,params_rm].^2) for i=1:size(sampled_trace_params,1)]
+    dist_thresh = percentile(dists, percentile_thresh)
+    med_trace = deepcopy(median(sampled_trace_params[dists .< dist_thresh, :], dims=1)[1,:])
+    med_trace[params_rm] .= 0
+    return med_trace
+end

@@ -596,6 +596,8 @@ function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rng
     n_neurons_nenc_enc_change = 0
     n_neurons_enc_change_all = 0
     n_neurons_enc_change_beh = [0,0,0]
+    dict_enc_change = Dict()
+    dict_enc = Dict()
     for dataset in datasets
         if rngs_valid == nothing
             rngs_valid = 1:length(fit_results[dataset]["ranges"])
@@ -605,6 +607,8 @@ function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rng
             @warn("Dataset $(dataset) has no time ranges where pumping could be compared")
             continue
         end
+        dict_enc_change[dataset] = Dict()
+        dict_enc[dataset] = Dict()
         
         neurons_ec = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([enc_change_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
         
@@ -616,6 +620,8 @@ function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rng
         n_neurons_enc += length(neurons_encode)        
         n_neurons_enc_change_all += length(neurons_ec)
         n_neurons_nenc_enc_change += length([n for n in neurons_ec if !(n in neurons_encode)])
+        dict_enc_change[dataset] = [n for n in neurons_ec if n in neurons_encode]
+        dict_enc[dataset] = neurons_encode
         
         n_neurons_tot += fit_results[dataset]["num_neurons"]
 
@@ -636,6 +642,92 @@ function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rng
             end
         end
     end
-    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc, n_neurons_nenc_enc_change, n_neurons_enc_change_beh
+    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc, n_neurons_nenc_enc_change, n_neurons_enc_change_beh, dict_enc_change, dict_enc
 end
         
+function get_consistent_neurons(datasets, fit_results, neuron_categorization, dict_enc, rngs_use; rngs_valid=[5,6], ewma_skip=200, err_thresh=0.9)
+    consistent_neurons = Dict()
+    inconsistent_neurons = Dict()
+    parameters = Dict()
+    fits = Dict()
+    @assert(length(rngs_valid) == 2)
+    for dataset in datasets
+        consistent_neurons[dataset] = []
+        inconsistent_neurons[dataset] = []
+        parameters[dataset] = Dict()
+        fits[dataset] = Dict()
+        rng = rngs_use[dataset]
+        @assert(rng in rngs_valid)
+        rng_other = [r for r in rngs_valid if r != rng][1]
+        
+        for n in dict_enc[dataset]
+
+            ps_keep = []
+            if (n in neuron_categorization[dataset][rng]["v"]["all"])
+                append!(ps_keep, [1,2,5])
+            end
+            if (n in neuron_categorization[dataset][rng]["θh"]["all"])
+                append!(ps_keep, 3)
+            end
+            if (n in neuron_categorization[dataset][rng]["P"]["all"])
+                append!(ps_keep, 4)
+            end
+            ps_delete = [p for p in 1:5 if !(p in ps_keep)]
+            ps = project_posterior(fit_results[dataset]["sampled_trace_params"][rng, n, :, :], ps_delete)
+            ps[6] = 0
+            parameters[dataset][n] = ps
+            
+            rng_test = fit_results[dataset]["ranges"][rng_other]
+            rng_len = length(fit_results[dataset]["v"])
+            
+            rng_fit = fit_results[dataset]["ranges"][rng]
+            fit = zscore(model_nl8(rng_len, ps[1:8]..., fit_results[dataset]["v"], fit_results[dataset]["θh"], fit_results[dataset]["P"]))
+            
+            fits[dataset][n] = fit
+            err = mean((fit[rng_test] .- fit_results[dataset]["trace_array"][n,rng_test])[ewma_skip+1:end] .^ 2)
+            err_control = mean(fit_results[dataset]["trace_array"][n,rng_test][ewma_skip+1:end].^2)
+            
+            if err > err_thresh * err_control
+                push!(inconsistent_neurons[dataset], n)
+            else
+                push!(consistent_neurons[dataset], n)
+            end
+        end
+    end
+    return consistent_neurons, inconsistent_neurons, parameters, fits
+end
+
+""" Computes summary statistics.
+`function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)`
+
+`return n_neurons_tot, n_neurons_enc, n_neurons_enc_change, n_neurons_consistent, n_neurons_fully_static,
+n_neurons_quasi_static, n_neurons_dynamic, n_neurons_indeterminable`
+"""
+function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)
+    n_neurons_tot = 0
+    n_neurons_enc = 0
+    n_neurons_enc_change = 0
+    n_neurons_consistent = 0
+    n_neurons_fully_static = 0
+    n_neurons_quasi_static = 0
+    n_neurons_dynamic = 0
+    n_neurons_indeterminable = 0
+    for dataset in datasets
+        n_neurons_tot += enc_stat_dict[dataset]["n_neurons_tot_all"]
+        n_neurons_enc += enc_stat_dict[dataset]["n_neurons_fit_all"]
+        @assert(length(dict_enc[dataset]) == enc_stat_dict[dataset]["n_neurons_fit_all"],
+                "Number of encoding neurons must equal length of encoding neurons.")
+        for n in dict_enc[dataset]
+            consistent = (n in consistent_neurons[dataset])
+            enc_change = (n in dict_enc_change[dataset])
+            n_neurons_consistent += consistent
+            n_neurons_enc_change += enc_change
+            n_neurons_fully_static += (consistent && ~enc_change)
+            n_neurons_quasi_static += (consistent && enc_change)
+            n_neurons_dynamic += (~consistent && enc_change)
+            n_neurons_indeterminable += (~consistent && ~enc_change)
+        end
+    end
+    return n_neurons_tot, n_neurons_enc, n_neurons_enc_change, n_neurons_consistent, n_neurons_fully_static,
+            n_neurons_quasi_static, n_neurons_dynamic, n_neurons_indeterminable
+end

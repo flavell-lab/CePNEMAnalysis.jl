@@ -63,3 +63,11 @@ function load_gen_output(datasets, fit_ranges, path_output, path_h5, n_params, n
     end
     return fit_results, incomplete_datasets
 end
+
+function get_pumping_ranges(datasets, P_ranges; rngs_valid=[5,6])
+    rngs = Dict()
+    for dataset in datasets
+        rngs[dataset] = argmax([P_ranges[dataset][r][2] - P_ranges[dataset][r][1] for r=rngs_valid]) + rngs_valid[1] - 1
+    end
+    return rngs
+end

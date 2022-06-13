@@ -590,7 +590,7 @@ function get_enc_stats_pool(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, 
     n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
 end
 
-function get_enc_change_stats(fit_results, enc_change_p, datasets; rngs_valid=nothing, p=0.05)
+function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rngs_valid=nothing, p=0.05)
     n_neurons_tot = 0
     n_neurons_enc = 0
     n_neurons_nenc_enc_change = 0

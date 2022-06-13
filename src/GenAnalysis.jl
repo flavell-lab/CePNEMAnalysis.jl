@@ -19,7 +19,7 @@ include("dist.jl")
 include("categorize.jl")
 include("plot.jl")
 include("tsne.jl")
-include("cluseter.jl")
+include("cluster.jl")
 
 export
     # data.jl

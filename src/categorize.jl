@@ -477,7 +477,7 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, 
     return encoding_changes, encoding_change_p_vals
 end
 
-function get_neuron_category(dataset, rng, neuron, neuron_categorization, sampled_trace_params)
+function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categorization, sampled_trace_params)
     encoding = []
     for beh in ["v", "θh", "P"]
         for k in keys(neuron_categorization[dataset][rng][beh])

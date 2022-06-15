@@ -1,4 +1,4 @@
-function extrapolate_neurons(consistent_neurons, parameters, rngs_use, fit_results)
+function extrapolate_neurons(consistent_neurons, parameters, rngs_use, fit_results, θh_pos_is_ventral)
     all_params = zeros(sum([length(v) for v in values(consistent_neurons)]), 11)
     ids = []
     all_behs = zeros(1600 * length(keys(consistent_neurons)), 5)

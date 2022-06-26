@@ -4,9 +4,11 @@ authors = ["goldenratio1618 <adamatanas@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+ANTSUNData = "cee8c2ed-1f8c-46f5-bbc8-43813539d123"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
 EncoderModelGen = "e5213632-2d12-443e-a840-e9f463057f13"
 FlavellBase = "88015601-1e04-46e4-b006-ffd03bd63f42"
+FlavellConstants = "dcb47d69-08dc-4104-8beb-08f30fc48864"
 Gen = "ea4f424c-a589-11e8-07c0-fd5c91b9da4a"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 MultipleTesting = "f8716d33-7c4a-5097-896f-ce0ecbd3ef6b"

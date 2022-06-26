@@ -2,8 +2,8 @@
 Evaluate model NL8, deconvolved, given `params` and `v`, `θh`, and `P`. Does not use the sigmoid.
 """
 function deconvolved_model_nl8(params::Vector{Float64}, v::Float64, θh::Float64, P::Float64)
-    return ((params[1]+1)/sqrt(params[1]^2+1) - 2*params[1]/sqrt(params[1]^2+1)*(v/v_STD < 0)) * (
-        params[2] * (v/v_STD) + params[3] * (θh/θh_STD) + params[4] * (P/P_STD) + params[5]) + params[8]
+    return ((params[1]+1)/sqrt(params[1]^2+1) - 2*params[1]/sqrt(params[1]^2+1)*(v/σ_vel < 0)) * (
+        params[2] * (v/σ_vel) + params[3] * (θh/σ_θh) + params[4] * (P/σ_pumping) + params[5]) + params[8]
 end
 
 """

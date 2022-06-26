@@ -1,6 +1,8 @@
 module GenAnalysis
 
 using FlavellBase
+using FlavellConstants
+using ANTSUNData
 using EncoderModelGen
 using HDF5
 using Gen

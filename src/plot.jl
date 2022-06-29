@@ -248,8 +248,13 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
         end
                 
         if modulation
-            if issubset(n, modulated_neurons) && (length(modulated_datasets) == 0 || issubset(dataset, modulated_datasets)) && (length(modulated_ranges) == 0 || issubset(rng, modulated_ranges))
-                c = c_modulated
+            for i=1:length(modulated_neurons)
+                if n == modulated_neurons[i] && 
+                        (length(modulated_datasets) == 0 || dataset == modulated_datasets[i]) && 
+                        (length(modulated_ranges) == 0 || rng == modulated_ranges[i])
+                    c = c_modulated
+                    break
+                end
             end
         end
         

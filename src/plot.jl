@@ -142,12 +142,13 @@ Plots a t-SNE embedding between datasets, ranges, and neurons.
 - `s_res`: Resolution of different `s` values.
 - `modulation` (optional, default `false`): Whether you want to highlight special neurons by their response to neuromodulation/ other properties.
 - `c_modulated` (optional, default `RGB.(0, 0, 0)`): The colors of special neurons listed in modulated_neurons.
-- `modulated_neurons` (optional, default an empty set): The list of special neurons that you wish to highlight.  
+- `modulated_datasets, modulated_ranges, modulated_neurons` (optional, default an empty set): The list of special neurons that you wish to highlight.
+    `modulated_datasets` and `modulated_ranges` can be left empty, if so then the neuron will be matched across all datasets and ranges.
 """
 function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neuron_ids_tsne, neuron_categorization, vars_plot; label_v_shapes=false, label_neurons=false, plot_axes=false,
         velocity_colors=[RGB.(0,0.9,1), RGB.(0.5,0.6,1), RGB.(0,0,1)], θh_colors=[RGB.(1,0.7,0.3), RGB.(1,0.3,0.7), RGB.(0.7,0,0)], P_colors=[RGB.(0,1,0), RGB.(0.7,1,0), RGB.(0,0.5,0)], 
         c_multiplex=RGB.(0.7,0.7,0.7), c_nonencoding=RGB.(0.8,0.8,0.8), shapes=[:circle, :rtriangle, :ltriangle, :diamond], sizes=[6,10,10,8], s_rng=[0,7], s_res=100, 
-        modulation=false, c_modulated=RGB.(0,0,0), modulated_neurons=[])
+        modulation=false, c_modulated=RGB.(0,0,0), modulated_datasets=[], modulated_ranges=[], modulated_neurons=[])
             
     if label_v_shapes
         @assert(!isnothing(neuron_categorization), "Neuron categories must exist to label velocity with shapes.")
@@ -247,7 +248,7 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
         end
                 
         if modulation
-            if issubset(n, modulated_neurons)
+            if issubset(n, modulated_neurons) && (length(modulated_datasets) == 0 || issubset(dataset, modulated_datasets)) && (length(modulated_ranges) == 0 || issubset(rng, modulated_ranges))
                 c = c_modulated
             end
         end

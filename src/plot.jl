@@ -192,13 +192,13 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
                 end
             elseif is_θh && 2 in vars_plot
                 num_enc = 0
-                if n in neuron_categorization[dataset][rng]["θh"]["rect_fwd_dorsal"] ||
-                        n in neuron_categorization[dataset][rng]["θh"]["rect_rev_dorsal"]
+                if n in neuron_categorization[dataset][rng]["θh"]["fwd_dorsal"] ||
+                        n in neuron_categorization[dataset][rng]["θh"]["rev_dorsal"]
                     c = colors[2][3]
                     num_enc += 1
                 end
-                if n in neuron_categorization[dataset][rng]["θh"]["rect_fwd_ventral"] ||
-                    n in neuron_categorization[dataset][rng]["θh"]["rect_rev_ventral"]
+                if n in neuron_categorization[dataset][rng]["θh"]["fwd_ventral"] ||
+                    n in neuron_categorization[dataset][rng]["θh"]["rev_ventral"]
                     c = colors[2][1]
                     num_enc += 1
                 end
@@ -207,13 +207,13 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
                 end
             elseif is_P && 3 in vars_plot
                 num_enc = 0
-                if n in neuron_categorization[dataset][rng]["P"]["rect_fwd_inh"] || 
-                        n in neuron_categorization[dataset][rng]["P"]["rect_rev_inh"]
+                if n in neuron_categorization[dataset][rng]["P"]["fwd_inh"] || 
+                        n in neuron_categorization[dataset][rng]["P"]["rev_inh"]
                     c = colors[3][3]
                     num_enc += 1
                 end
-                if n in neuron_categorization[dataset][rng]["P"]["rect_fwd_act"] || 
-                    n in neuron_categorization[dataset][rng]["P"]["rect_rev_act"]
+                if n in neuron_categorization[dataset][rng]["P"]["fwd_act"] || 
+                    n in neuron_categorization[dataset][rng]["P"]["rev_act"]
                     c = colors[3][1]
                     num_enc += 1
                 end

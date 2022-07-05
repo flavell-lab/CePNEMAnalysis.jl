@@ -146,7 +146,12 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
             end
         end
     end
-            
+
+    diff_1 = deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]
+    diff_2 = deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1]
+    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+
     for i = [1,4]
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,:] .- deconvolved_activity_1[:,i,2,:]
@@ -239,6 +244,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     
     v_p_vals_uncorr = ones(max_n,4,4)
     v_p_vals = ones(max_n,4,4)
+    v_p_vals_rect_neg = ones(max_n)
+    v_p_vals_rect_pos = ones(max_n)
+
     
     v_p_vals_all_uncorr = ones(max_n)
     p_vals_all_uncorr = ones(max_n)
@@ -256,7 +264,10 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         end
     end
 
+
     for neuron in keys(neuron_cats)
+        v_p_vals_rect_neg[neuron] .= neuron_cats[neuron]["v_rect_neg"]
+        v_p_vals_rect_pos[neuron] .= neuron_cats[neuron]["v_rect_pos"]
         adjust_v_p_vals = Vector{Float64}()
         all_p_vals = Vector{Float64}()
         for x in 1:3
@@ -276,6 +287,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         v_p_vals_all_uncorr[neuron] = minimum(adjust(adjust_v_p_vals, BenjaminiHochberg()))
     end
     
+    v_p_vals_rect_pos = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
+    v_p_vals_rect_neg = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
+
     v_p_vals_all = adjust(v_p_vals_all_uncorr, BenjaminiHochberg())
     p_vals_all = adjust(p_vals_all_uncorr, BenjaminiHochberg())
     
@@ -284,8 +298,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["v"]["fwd"] = [n for n in 1:max_n if v_p_vals[n,1,4] < p]
     categories["v"]["rev_slope_pos"] = [n for n in 1:max_n if v_p_vals[n,1,2] < p]
     categories["v"]["rev_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,2,1] < p]
-    categories["v"]["rect_pos"] = [n for n in 1:max_n if v_p_vals[n,2,3] < p]
-    categories["v"]["rect_neg"] = [n for n in 1:max_n if v_p_vals[n,3,2] < p]
+    categories["v"]["rect_pos"] = [n for n in 1:max_n if v_p_vals_rect_pos[n] < p]
+    categories["v"]["rect_neg"] = [n for n in 1:max_n if v_p_vals_rect_neg[n] < p]
     categories["v"]["fwd_slope_pos"] = [n for n in 1:max_n if v_p_vals[n,3,4] < p]
     categories["v"]["fwd_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,4,3] < p]
     categories["v"]["all"] = [n for n in 1:max_n if v_p_vals_all[n] < p]

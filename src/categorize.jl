@@ -207,16 +207,16 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["θh"]["fwd_dorsal"] = []
     categories["θh"]["rev_ventral"] = []
     categories["θh"]["rev_dorsal"] = []
-    categories["θh"]["rect_dorsal"] = ones(max_n)
-    categories["θh"]["rect_ventral"] = ones(max_n)
+    categories["θh"]["rect_dorsal"] = []
+    categories["θh"]["rect_ventral"] = []
     categories["θh"]["all"] = []
     categories["P"] = Dict()
     categories["P"]["fwd_act"] = []
     categories["P"]["fwd_inh"] = []
     categories["P"]["rev_act"] = []
     categories["P"]["rev_inh"] = []
-    categories["P"]["rect_act"] = ones(max_n)
-    categories["P"]["rect_inh"] = ones(max_n)
+    categories["P"]["rect_act"] = []
+    categories["P"]["rect_inh"] = []
     categories["P"]["all"] = []
     categories["all"] = []
 

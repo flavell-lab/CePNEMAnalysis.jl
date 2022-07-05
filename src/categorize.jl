@@ -147,8 +147,8 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
         end
     end
 
-    diff_1 = deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]
-    diff_2 = deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1]
+    diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .- (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
+    diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .- (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
     categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
     categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
 

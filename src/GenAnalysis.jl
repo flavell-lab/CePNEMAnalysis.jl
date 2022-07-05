@@ -13,6 +13,7 @@ using TSne
 using ColorSchemes
 using MultipleTesting
 using MultivariateStats
+using FlavellConstants, ANTSUNData
 
 include("data.jl")
 include("dist.jl")

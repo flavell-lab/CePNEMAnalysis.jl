@@ -17,7 +17,7 @@ function load_gen_output(datasets, fit_ranges, path_output, path_h5, n_params, n
     @showprogress for dataset=datasets
         data = import_data(joinpath(path_h5, "$(dataset)-data.h5"))
         ranges = fit_ranges[dataset]
-            
+        n_t = data["n_t"]
         n_neurons = size(data["trace_array"], 1)
         fit_results[dataset] = Dict()
         fit_results[dataset]["v"] = data["velocity"]
@@ -38,7 +38,14 @@ function load_gen_output(datasets, fit_ranges, path_output, path_h5, n_params, n
 
         fit_results[dataset]["sampled_trace_params"] = zeros(length(ranges), n_neurons, n_samples, n_params)
         fit_results[dataset]["sampled_tau_vals"] = zeros(length(ranges), n_neurons, n_samples)
-        fit_results[dataset]["avg_timestep"] = (data["timestamp_confocal"][800] - data["timestamp_confocal"][1] + data["timestamp_confocal"][ranges[end][end]] - data["timestamp_confocal"][801]) / (ranges[end][end]-2)
+
+        list_t_confocal = data["timestamp_confocal"]
+        if n_t > 800
+            fit_results[dataset]["avg_timestep"] = (mean(diff(list_t_confocal[1:800])) +
+                mean(diff(list_t_confocal[801:n_t]))) / 2
+        else
+            fit_results[dataset]["avg_timestep"] = mean(diff(list_t_confocal[1:n_t]))
+        end
 
         incomplete_datasets[dataset] = zeros(Bool, length(ranges), n_neurons)
         for (i,rng)=enumerate(ranges)

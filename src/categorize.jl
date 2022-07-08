@@ -292,11 +292,11 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         v_p_vals_rect_neg[neuron] = neuron_cats[neuron]["v_rect_neg"]
         v_p_vals_rect_pos[neuron] = neuron_cats[neuron]["v_rect_pos"]
 
-        θh_p_vals_rect_neg[neuron] = neuron_cats[neuron]["v_rect_neg"]
-        θh_p_vals_rect_pos[neuron] = neuron_cats[neuron]["v_rect_pos"]
+        θh_p_vals_rect_neg[neuron] = neuron_cats[neuron]["θh_rect_neg"]
+        θh_p_vals_rect_pos[neuron] = neuron_cats[neuron]["θh_rect_pos"]
 
-        P_p_vals_rect_neg[neuron] = neuron_cats[neuron]["v_rect_neg"]
-        P_p_vals_rect_pos[neuron] = neuron_cats[neuron]["v_rect_pos"]
+        P_p_vals_rect_neg[neuron] = neuron_cats[neuron]["P_rect_neg"]
+        P_p_vals_rect_pos[neuron] = neuron_cats[neuron]["P_rect_pos"]
 
         adjust_v_p_vals = Vector{Float64}()
         all_p_vals = Vector{Float64}()

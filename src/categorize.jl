@@ -320,8 +320,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     v_p_vals_rect_pos = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
     v_p_vals_rect_neg = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
 
-    P_p_vals_rect_pos = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
-    P_p_vals_rect_neg = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
+    P_p_vals_rect_pos = adjust(P_p_vals_rect_pos, BenjaminiHochberg())
+    P_p_vals_rect_neg = adjust(P_p_vals_rect_neg, BenjaminiHochberg())
 
     v_p_vals_all = adjust(v_p_vals_all_uncorr, BenjaminiHochberg())
     p_vals_all = adjust(p_vals_all_uncorr, BenjaminiHochberg())
@@ -354,8 +354,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         rev_θh_ventral = adjust([neuron_cats[n]["rev_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
         θh_ventral = adjust([min(neuron_cats[n]["fwd_θh_encoding_inh"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
         θh_dorsal = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_act"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_p_vals_rect_ventral = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
-        θh_p_vals_rect_dorsal = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
+        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_neg, BenjaminiHochberg())
+        θh_p_vals_rect_dorsal = adjust(θh_p_vals_rect_pos, BenjaminiHochberg())
     else
         fwd_θh_dorsal = adjust([neuron_cats[n]["fwd_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
         fwd_θh_ventral = adjust([neuron_cats[n]["fwd_θh_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
@@ -363,8 +363,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         rev_θh_ventral = adjust([neuron_cats[n]["rev_θh_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
         θh_dorsal = adjust([min(neuron_cats[n]["fwd_θh_encoding_inh"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
         θh_ventral = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_act"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_p_vals_rect_ventral = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
-        θh_p_vals_rect_dorsal = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
+        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_pos, BenjaminiHochberg())
+        θh_p_vals_rect_dorsal = adjust(θh_p_vals_rect_neg, BenjaminiHochberg())
     end
     θh_all = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["fwd_θh_encoding_inh"],
             neuron_cats[n]["rev_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())

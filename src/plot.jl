@@ -67,7 +67,7 @@ Plots deconvolved neural activity.
 # Arguments:
 - `dataset`
 - `rngs`: Ranges to plot
-- `deconvolved_activity`: Deconvolved neural activity
+- `deconvolved_activity_plot`: Deconvolved neural activity, for plotting
 - `v_ranges_plot`: velocity ranges
 - `θh_ranges_plot`: head curvature ranges
 - `P_ranges_plot`: feeding ranges
@@ -78,7 +78,7 @@ Plots deconvolved neural activity.
 - `len`: Length to extrapolate other behaviors
 - `pos`: Position of other behaviors to use
 """
-function plot_deconvolved_neural_activity!(dataset, rngs, deconvolved_activity, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis;
+function plot_deconvolved_neural_activity!(dataset, rngs, deconvolved_activity_plot, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis;
         res=200, plot_size=(700,350), init=true, len=200, pos=[100])
 
     v_rng = collect(range(v_ranges_plot[dataset][rngs[1]][1], v_ranges_plot[dataset][rngs[1]][2], length=Int(len/2)))
@@ -490,7 +490,7 @@ function plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, para
  
 
     hist_fit = fit(Histogram, (c11,c12), (x_rng, y_rng))
-    if plot
+    if !rgb
         return Plots.heatmap!(hist_fit.weights, c=cgrad([:white, color, :black]), xaxis=nothing, yaxis=nothing, framestyle=:box, colorbar=nothing, size=(500,500))
     else
         return hist_fit.weights ./ maximum(hist_fit.weights) .* color, x_rng, y_rng

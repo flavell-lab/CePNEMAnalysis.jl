@@ -497,6 +497,10 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)
+        if rngs_valid == nothing
+            rngs_valid = 1:length(fit_results[dataset]["ranges"])
+        end
+
         dict_ = Dict{String,Any}()
         n_neuron = fit_results[dataset]["num_neurons"]
         n_b = 3 # number of behaviors
@@ -507,9 +511,6 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         n_neurons_beh = [0,0,0]
         n_neurons_npred = [0,0,0,0]
         
-        if rngs_valid == nothing
-            rngs_valid = 1:length(fit_results[dataset]["ranges"])
-        end
         P_ranges_valid = [r for r=rngs_valid if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
         n_neurons_tot_all += n_neuron
         neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs_valid], BenjaminiHochberg()) .< p) > 0]

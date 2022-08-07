@@ -413,8 +413,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     
     fwd_p_vals = adjust([neuron_cats[n]["v_fwd"] for n in sort(collect(keys(neuron_cats)))], BenjaminiHochberg())
     rev_p_vals = adjust([neuron_cats[n]["v_rev"] for n in sort(collect(keys(neuron_cats)))], BenjaminiHochberg())
-    categories["v"]["rev"] = [n for n in 1:max_n if fwd_p_vals[n] < p]
-    categories["v"]["fwd"] = [n for n in 1:max_n if rev_p_vals[n] < p]
+    categories["v"]["rev"] = [n for n in 1:max_n if rev_p_vals[n] < p]
+    categories["v"]["fwd"] = [n for n in 1:max_n if fwd_p_vals[n] < p]
     categories["v"]["rev_slope_pos"] = [n for n in 1:max_n if v_p_vals[n,1,2] < p]
     categories["v"]["rev_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,2,1] < p]
     categories["v"]["rect_pos"] = [n for n in 1:max_n if v_p_vals_rect_pos[n] < p]

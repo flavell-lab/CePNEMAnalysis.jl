@@ -485,8 +485,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["P"]["fwd_act"] = [n for n in 1:max_n if fwd_P_act[n] < p]
     categories["P"]["rev_inh"] = [n for n in 1:max_n if rev_P_inh[n] < p]
     categories["P"]["rev_act"] = [n for n in 1:max_n if rev_P_act[n] < p]
-    categories["P"]["rect_pos"] = [n for n in 1:max_n if P_p_vals_rect_pos[n] < p]
-    categories["P"]["rect_neg"] = [n for n in 1:max_n if P_p_vals_rect_neg[n] < p]
+    categories["P"]["rect_act"] = [n for n in 1:max_n if P_p_vals_rect_pos[n] < p]
+    categories["P"]["rect_inh"] = [n for n in 1:max_n if P_p_vals_rect_neg[n] < p]
     categories["P"]["act"] = [n for n in 1:max_n if P_act[n] < p]
     categories["P"]["inh"] = [n for n in 1:max_n if P_inh[n] < p]
     categories["P"]["all"] = [n for n in 1:max_n if P_p_vals_all[n] < p]
@@ -497,8 +497,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["fwd_act"] .= fwd_P_act
     corrected_p_vals["P"]["rev_inh"] .= rev_P_inh
     corrected_p_vals["P"]["rev_act"] .= rev_P_act
-    corrected_p_vals["P"]["rect_pos"] .=  P_p_vals_rect_pos
-    corrected_p_vals["P"]["rect_neg"] .= P_p_vals_rect_neg
+    corrected_p_vals["P"]["rect_act"] .=  P_p_vals_rect_pos
+    corrected_p_vals["P"]["rect_inh"] .= P_p_vals_rect_neg
     corrected_p_vals["P"]["act"] .= P_act
     corrected_p_vals["P"]["inh"] .= P_inh
     corrected_p_vals["P"]["all"] .= P_p_vals_all

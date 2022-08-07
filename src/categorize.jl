@@ -765,22 +765,25 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)
+        if rngs_valid == nothing
+            rngs = 1:length(fit_results[dataset]["ranges"])
+        else
+            rngs = rngs_valid[dataset]
+        end
+
         dict_ = Dict{String,Any}()
         n_neuron = fit_results[dataset]["num_neurons"]
         n_b = 3 # number of behaviors
-        enc_array = zeros(Int, n_neuron, n_b, length(rngs_valid))
+        enc_array = zeros(Int, n_neuron, n_b, length(rngs))
         
         n_neurons_tot_all = 0
         n_neurons_fit_all = 0
         n_neurons_beh = [0,0,0]
         n_neurons_npred = [0,0,0,0]
         
-        if rngs_valid == nothing
-            rngs_valid = 1:length(fit_results[dataset]["ranges"])
-        end
-        P_ranges_valid = [r for r=rngs_valid if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
+        P_ranges_valid = [r for r=rngs if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
         n_neurons_tot_all += n_neuron
-        neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs_valid], BenjaminiHochberg()) .< p) > 0]
+        neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
         n_neurons_fit_all += length(neurons_fit)
         if length(P_ranges_valid) == 0
             @warn("Dataset $(dataset) has no time ranges with valid pumping information")
@@ -790,12 +793,12 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         for n=1:fit_results[dataset]["num_neurons"]
             max_npred = 0
 
-            v_p = adjust([neuron_p[dataset][r]["v"]["all"][n] for r=rngs_valid], BenjaminiHochberg())
-            θh_p = adjust([neuron_p[dataset][r]["θh"]["all"][n] for r=rngs_valid], BenjaminiHochberg())
+            v_p = adjust([neuron_p[dataset][r]["v"]["all"][n] for r=rngs], BenjaminiHochberg())
+            θh_p = adjust([neuron_p[dataset][r]["θh"]["all"][n] for r=rngs], BenjaminiHochberg())
             P_p_valid = adjust([neuron_p[dataset][r]["P"]["all"][n] for r=P_ranges_valid], BenjaminiHochberg())
             P_p = []
             idx=1
-            for r=rngs_valid
+            for r=rngs
                 if r in P_ranges_valid
                     push!(P_p, P_p_valid[idx])
                     idx += 1
@@ -813,7 +816,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
                 n_neurons_beh[3] += 1   
             end
             
-            for r=1:length(rngs_valid)
+            for r=1:length(rngs)
                 enc = adjust([v_p[r], θh_p[r], P_p[r]], BenjaminiHochberg())
                 max_npred = max(max_npred, sum(enc .< p))
             end

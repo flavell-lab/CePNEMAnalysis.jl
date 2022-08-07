@@ -467,8 +467,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["θh"]["fwd_dorsal"] .= fwd_θh_dorsal
     corrected_p_vals["θh"]["rev_ventral"] .= rev_θh_ventral
     corrected_p_vals["θh"]["rev_dorsal"] .= rev_θh_dorsal
-    corrected_p_vals["θh"]["rect_ventral"] .= θh_p_vals_rect_ventral[n]
-    corrected_p_vals["θh"]["rect_dorsal"] .= θh_p_vals_rect_dorsal[n]
+    corrected_p_vals["θh"]["rect_ventral"] .= θh_p_vals_rect_ventral
+    corrected_p_vals["θh"]["rect_dorsal"] .= θh_p_vals_rect_dorsal
     corrected_p_vals["θh"]["dorsal"] .= θh_dorsal
     corrected_p_vals["θh"]["ventral"] .= θh_ventral
     corrected_p_vals["θh"]["all"] .= θh_p_vals_all
@@ -497,8 +497,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["fwd_act"] .= fwd_P_act
     corrected_p_vals["P"]["rev_inh"] .= rev_P_inh
     corrected_p_vals["P"]["rev_act"] .= rev_P_act
-    corrected_p_vals["P"]["rect_pos"] .=  P_p_vals_rect_pos[n]
-    corrected_p_vals["P"]["rect_neg"] .= P_p_vals_rect_neg[n]
+    corrected_p_vals["P"]["rect_pos"] .=  P_p_vals_rect_pos
+    corrected_p_vals["P"]["rect_neg"] .= P_p_vals_rect_neg
     corrected_p_vals["P"]["act"] .= P_act
     corrected_p_vals["P"]["inh"] .= P_inh
     corrected_p_vals["P"]["all"] .= P_p_vals_all

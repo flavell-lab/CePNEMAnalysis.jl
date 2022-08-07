@@ -391,10 +391,12 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         P_p_vals_all_uncorr[neuron] = minimum(adjust(adjust_P_p_vals, BenjaminiHochberg()))
     end
     
-    corrected_p_vals["ewma_pos"] = adjust(corrected_p_vals["ewma_pos"], BenjaminiHochberg())
-    corrected_p_vals["ewma_neg"] = adjust(corrected_p_vals["ewma_neg"], BenjaminiHochberg())
-    categories["ewma_pos"] = [n for n in 1:max_n if corrected_p_vals["ewma_pos"][n] < p]
-    categories["ewma_neg"] = [n for n in 1:max_n if corrected_p_vals["ewma_neg"][n] < p]
+    if compute_ewma
+        corrected_p_vals["ewma_pos"] = adjust(corrected_p_vals["ewma_pos"], BenjaminiHochberg())
+        corrected_p_vals["ewma_neg"] = adjust(corrected_p_vals["ewma_neg"], BenjaminiHochberg())
+        categories["ewma_pos"] = [n for n in 1:max_n if corrected_p_vals["ewma_pos"][n] < p]
+        categories["ewma_neg"] = [n for n in 1:max_n if corrected_p_vals["ewma_neg"][n] < p]
+    end
 
 
     v_p_vals_rect_pos = adjust(v_p_vals_rect_pos, BenjaminiHochberg())

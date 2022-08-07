@@ -62,6 +62,7 @@ export
     plot_tsne,
     plot_tau_histogram,
     plot_neuron,
+    make_umap_rgb,
     plot_posterior_heatmap!,
     plot_posterior_rgb,
     # pca.jl

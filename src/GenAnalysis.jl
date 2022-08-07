@@ -36,6 +36,7 @@ export
     prob_P_greater_Q,
     project_posterior,
     # categorize.jl
+    VALID_V_COMPARISONS,
     deconvolved_model_nl8,
     compute_range,
     get_deconvolved_activity,
@@ -43,6 +44,7 @@ export
     neuron_p_vals,
     categorize_neurons,
     categorize_all_neurons,
+    subcategorize_all_neurons!,
     get_neuron_category,
     detect_encoding_changes,
     get_enc_stats,

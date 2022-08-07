@@ -1,3 +1,5 @@
+VALID_V_COMPARISONS = [(1,2), (2,1), (3,4), (4,3)]
+
 """
 Evaluate model NL8, deconvolved, given `params` and `v`, `θh`, and `P`. Does not use the sigmoid.
 """
@@ -133,16 +135,17 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
     s = size(deconvolved_activity_1)
     categories["v_encoding"] = compute_p ? ones(s[2], s[2], s[3], s[4]) : zeros(s[2], s[2], s[3], s[4])
     
-    for i in 1:s[2]-1
-        for j in i+1:s[2]
-            for k in 1:s[3]
-                for m in 1:s[4]
-                    # count equal points as 0.5
-                    diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
-                    diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                    categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-                    categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-                end
+    for (i,j) in VALID_V_COMPARISONS
+        if i > j
+            continue
+        end
+        for k in 1:s[3]
+            for m in 1:s[4]
+                # count equal points as 0.5
+                diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
+                diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
+                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
             end
         end
     end
@@ -151,6 +154,11 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .- (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
     categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
     categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+
+    diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .+ (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
+    diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .+ (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
+    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
 
     for i = [1,4]
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
@@ -170,12 +178,22 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
     categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
     categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+
+    diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
+    diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
+    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
     
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
     categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
     categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+
+    diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
+    diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
+    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
 
     return categories
 end
@@ -189,8 +207,10 @@ Categorizes all neurons from their deconvolved activities.
 - `p`: Significant p-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `threshold`: Deconvolved activity must differ by at least this much
+- `ewma1` (optional): If set, compute EWMA difference between activities and include it in the `all` category
+- `ewma2` (optional): If set, compute EWMA difference between activities and include it in the `all` category
 """
-function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real)
+function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real; ewma1=nothing, ewma2=nothing)
     categories = Dict()
     categories["v"] = Dict()
     categories["v"]["rev"] = []
@@ -218,6 +238,13 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["P"]["rect_act"] = []
     categories["P"]["rect_inh"] = []
     categories["P"]["all"] = []
+
+    compute_ewma = !isnothing(ewma1) && !isnothing(ewma2)
+
+    if compute_ewma
+        categories["ewma_pos"] = []
+        categories["ewma_neg"] = []
+    end
     categories["all"] = []
 
     neuron_cats = Dict()
@@ -259,6 +286,11 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["rect_act"] = ones(max_n)
     corrected_p_vals["P"]["rect_inh"] = ones(max_n)
     corrected_p_vals["P"]["all"] = ones(max_n)
+
+    if compute_ewma
+        corrected_p_vals["ewma_pos"] = ones(max_n)
+        corrected_p_vals["ewma_neg"] = ones(max_n)
+    end
     corrected_p_vals["all"] = ones(max_n)
     
     v_p_vals_uncorr = ones(max_n,4,4)
@@ -272,19 +304,23 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
 
     
     v_p_vals_all_uncorr = ones(max_n)
+    θh_p_vals_all_uncorr = ones(max_n)
+    P_p_vals_all_uncorr = ones(max_n)
     p_vals_all_uncorr = ones(max_n)
     v_p_vals_all = ones(max_n)
+    θh_p_vals_all = ones(max_n)
+    P_p_vals_all = ones(max_n)
     p_vals_all = ones(max_n)
+
+    
     
     # for velocity, take best θh and P values but MH correct
-    for i=1:4
-        for j=1:4
-            for neuron in keys(neuron_cats)
-                v_p_vals_uncorr[neuron,i,j] = minimum(adjust(reshape(neuron_cats[neuron]["v_encoding"][i,j,:,:], (4,)), BenjaminiHochberg()))
-            end
-            # use BH correction since these are independent values
-            v_p_vals[:,i,j] .= adjust(v_p_vals_uncorr[:,i,j], BenjaminiHochberg())
+    for (i,j) = VALID_V_COMPARISONS
+        for neuron in keys(neuron_cats)
+            v_p_vals_uncorr[neuron,i,j] = neuron_cats[neuron]["v_encoding"][i,j,2,2]
         end
+        # use BH correction since these are independent values
+        v_p_vals[:,i,j] .= adjust(v_p_vals_uncorr[:,i,j], BenjaminiHochberg())
     end
 
 
@@ -299,24 +335,68 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         P_p_vals_rect_pos[neuron] = neuron_cats[neuron]["P_rect_pos"]
 
         adjust_v_p_vals = Vector{Float64}()
+        adjust_θh_p_vals = Vector{Float64}()
+        adjust_P_p_vals = Vector{Float64}()
         all_p_vals = Vector{Float64}()
-        for x in 1:3
-            for y=x+1:4
-                # correct for anticorrelation between forward and reverse neurons
-                push!(adjust_v_p_vals, min(1,2*min(v_p_vals_uncorr[neuron,x,y], v_p_vals_uncorr[neuron,y,x])))
-                push!(all_p_vals, min(1,2*min(v_p_vals_uncorr[neuron,x,y], v_p_vals_uncorr[neuron,y,x])))
+        for (i,j) = VALID_V_COMPARISONS
+            if i > j
+                continue
             end
+            # correct for anticorrelation between forward and reverse neurons
+            push!(adjust_v_p_vals, min(1,2*min(v_p_vals_uncorr[neuron,i,j], v_p_vals_uncorr[neuron,j,i])))
+            push!(all_p_vals, min(1,2*min(v_p_vals_uncorr[neuron,i,j], v_p_vals_uncorr[neuron,j,i])))
         end
         n = neuron
-        push!(all_p_vals, min(1,4*min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["fwd_θh_encoding_inh"], 
-                    neuron_cats[n]["rev_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_inh"])))
-        push!(all_p_vals, min(1,4*min(neuron_cats[n]["fwd_P_encoding_act"], neuron_cats[n]["fwd_P_encoding_inh"],
-                    neuron_cats[n]["rev_P_encoding_act"], neuron_cats[n]["rev_P_encoding_inh"])))
+
+        push!(adjust_θh_p_vals, min(1,2*min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["fwd_θh_encoding_inh"])))
+        push!(adjust_θh_p_vals, min(1,2*min(neuron_cats[n]["rev_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_inh"])))
+        push!(adjust_θh_p_vals, min(1,2*min(neuron_cats[n]["θh_rect_neg"], neuron_cats[n]["θh_rect_pos"])))
+        push!(adjust_θh_p_vals, min(1,2*min(neuron_cats[n]["θh_pos"], neuron_cats[n]["θh_neg"])))
+
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["fwd_θh_encoding_inh"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["rev_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_inh"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["θh_rect_neg"], neuron_cats[n]["θh_rect_pos"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["θh_pos"], neuron_cats[n]["θh_neg"])))
+
+        push!(adjust_P_p_vals, min(1,2*min(neuron_cats[n]["fwd_P_encoding_act"], neuron_cats[n]["fwd_P_encoding_inh"])))
+        push!(adjust_P_p_vals, min(1,2*min(neuron_cats[n]["rev_P_encoding_act"], neuron_cats[n]["rev_P_encoding_inh"])))
+        push!(adjust_P_p_vals, min(1,2*min(neuron_cats[n]["P_rect_neg"], neuron_cats[n]["P_rect_pos"])))
+        push!(adjust_P_p_vals, min(1,2*min(neuron_cats[n]["P_pos"], neuron_cats[n]["P_neg"])))
+
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["fwd_P_encoding_act"], neuron_cats[n]["fwd_P_encoding_inh"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["rev_P_encoding_act"], neuron_cats[n]["rev_P_encoding_inh"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["P_rect_neg"], neuron_cats[n]["P_rect_pos"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["P_pos"], neuron_cats[n]["P_neg"])))
+
+        push!(adjust_v_p_vals, min(1,2*min(neuron_cats[n]["v_rect_neg"], neuron_cats[n]["v_rect_pos"])))
+        push!(adjust_v_p_vals, min(1,2*min(neuron_cats[n]["θh_rect_neg"], neuron_cats[n]["θh_rect_pos"])))
+        push!(adjust_v_p_vals, min(1,2*min(neuron_cats[n]["P_rect_neg"], neuron_cats[n]["P_rect_pos"])))
+        push!(adjust_v_p_vals, min(1,2*min(neuron_cats[n]["v_fwd"], neuron_cats[n]["v_rev"])))
+
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["v_rect_neg"], neuron_cats[n]["v_rect_pos"])))
+        push!(all_p_vals, min(1,2*min(neuron_cats[n]["v_fwd"], neuron_cats[n]["v_rev"])))
+
+        if compute_ewma
+            ewma_pos = prob_P_greater_Q(ewma1[n,:], ewma2[n,:])
+            ewma_neg = prob_P_greater_Q(ewma2[n,:], ewma1[n,:])
+            corrected_p_vals["ewma_pos"][n] = ewma_pos
+            corrected_p_vals["ewma_neg"][n] = ewma_neg
+            push!(all_p_vals, min(1,2*min(ewma_pos, ewma_neg)))
+        end
+
         # use BH correction since correlations are expected to be positive after above correction
         p_vals_all_uncorr[neuron] = minimum(adjust(all_p_vals, BenjaminiHochberg()))
         v_p_vals_all_uncorr[neuron] = minimum(adjust(adjust_v_p_vals, BenjaminiHochberg()))
+        θh_p_vals_all_uncorr[neuron] = minimum(adjust(adjust_θh_p_vals, BenjaminiHochberg()))
+        P_p_vals_all_uncorr[neuron] = minimum(adjust(adjust_P_p_vals, BenjaminiHochberg()))
     end
     
+    corrected_p_vals["ewma_pos"] = adjust(corrected_p_vals["ewma_pos"], BenjaminiHochberg())
+    corrected_p_vals["ewma_neg"] = adjust(corrected_p_vals["ewma_neg"], BenjaminiHochberg())
+    categories["ewma_pos"] = [n for n in 1:max_n if corrected_p_vals["ewma_pos"][n] < p]
+    categories["ewma_neg"] = [n for n in 1:max_n if corrected_p_vals["ewma_neg"][n] < p]
+
+
     v_p_vals_rect_pos = adjust(v_p_vals_rect_pos, BenjaminiHochberg())
     v_p_vals_rect_neg = adjust(v_p_vals_rect_neg, BenjaminiHochberg())
 
@@ -324,11 +404,15 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     P_p_vals_rect_neg = adjust(P_p_vals_rect_neg, BenjaminiHochberg())
 
     v_p_vals_all = adjust(v_p_vals_all_uncorr, BenjaminiHochberg())
+    θh_p_vals_all = adjust(θh_p_vals_all_uncorr, BenjaminiHochberg())
+    P_p_vals_all = adjust(P_p_vals_all_uncorr, BenjaminiHochberg())
     p_vals_all = adjust(p_vals_all_uncorr, BenjaminiHochberg())
     
     
-    categories["v"]["rev"] = [n for n in 1:max_n if v_p_vals[n,4,1] < p]
-    categories["v"]["fwd"] = [n for n in 1:max_n if v_p_vals[n,1,4] < p]
+    fwd_p_vals = adjust([neuron_cats[n]["v_fwd"] for n in sort(collect(keys(neuron_cats)))], BenjaminiHochberg())
+    rev_p_vals = adjust([neuron_cats[n]["v_rev"] for n in sort(collect(keys(neuron_cats)))], BenjaminiHochberg())
+    categories["v"]["rev"] = [n for n in 1:max_n if fwd_p_vals[n] < p]
+    categories["v"]["fwd"] = [n for n in 1:max_n if rev_p_vals[n] < p]
     categories["v"]["rev_slope_pos"] = [n for n in 1:max_n if v_p_vals[n,1,2] < p]
     categories["v"]["rev_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,2,1] < p]
     categories["v"]["rect_pos"] = [n for n in 1:max_n if v_p_vals_rect_pos[n] < p]
@@ -337,12 +421,12 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["v"]["fwd_slope_neg"] = [n for n in 1:max_n if v_p_vals[n,4,3] < p]
     categories["v"]["all"] = [n for n in 1:max_n if v_p_vals_all[n] < p]
 
-    corrected_p_vals["v"]["rev"] .= v_p_vals[:,4,1]
-    corrected_p_vals["v"]["fwd"] .= v_p_vals[:,1,4]
+    corrected_p_vals["v"]["rev"] .= rev_p_vals[:]
+    corrected_p_vals["v"]["fwd"] .= fwd_p_vals[:]
     corrected_p_vals["v"]["rev_slope_pos"] .= v_p_vals[:,1,2]
     corrected_p_vals["v"]["rev_slope_neg"] .= v_p_vals[:,2,1]
-    corrected_p_vals["v"]["rect_pos"] .= v_p_vals[:,2,3]
-    corrected_p_vals["v"]["rect_neg"] .= v_p_vals[:,3,2]
+    corrected_p_vals["v"]["rect_pos"] .= v_p_vals_rect_pos[:]
+    corrected_p_vals["v"]["rect_neg"] .= v_p_vals_rect_neg[:]
     corrected_p_vals["v"]["fwd_slope_pos"] .= v_p_vals[:,3,4]
     corrected_p_vals["v"]["fwd_slope_neg"] .= v_p_vals[:,4,3]
     corrected_p_vals["v"]["all"] .= v_p_vals_all[:]
@@ -352,22 +436,20 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         fwd_θh_ventral = adjust([neuron_cats[n]["fwd_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
         rev_θh_dorsal = adjust([neuron_cats[n]["rev_θh_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
         rev_θh_ventral = adjust([neuron_cats[n]["rev_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
-        θh_ventral = adjust([min(neuron_cats[n]["fwd_θh_encoding_inh"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_dorsal = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_act"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_neg, BenjaminiHochberg())
+        θh_dorsal = adjust([neuron_cats[n]["θh_pos"] for n in 1:max_n], BenjaminiHochberg())
+        θh_ventral = adjust([neuron_cats[n]["θh_neg"] for n in 1:max_n], BenjaminiHochberg())
         θh_p_vals_rect_dorsal = adjust(θh_p_vals_rect_pos, BenjaminiHochberg())
+        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_neg, BenjaminiHochberg())
     else
         fwd_θh_dorsal = adjust([neuron_cats[n]["fwd_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
         fwd_θh_ventral = adjust([neuron_cats[n]["fwd_θh_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
         rev_θh_dorsal = adjust([neuron_cats[n]["rev_θh_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
         rev_θh_ventral = adjust([neuron_cats[n]["rev_θh_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
-        θh_dorsal = adjust([min(neuron_cats[n]["fwd_θh_encoding_inh"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_ventral = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_act"]) for n in 1:max_n], BenjaminiHochberg())
-        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_pos, BenjaminiHochberg())
+        θh_dorsal = adjust([neuron_cats[n]["θh_neg"] for n in 1:max_n], BenjaminiHochberg())
+        θh_ventral = adjust([neuron_cats[n]["θh_pos"] for n in 1:max_n], BenjaminiHochberg())
         θh_p_vals_rect_dorsal = adjust(θh_p_vals_rect_neg, BenjaminiHochberg())
+        θh_p_vals_rect_ventral = adjust(θh_p_vals_rect_pos, BenjaminiHochberg())
     end
-    θh_all = adjust([min(neuron_cats[n]["fwd_θh_encoding_act"], neuron_cats[n]["fwd_θh_encoding_inh"],
-            neuron_cats[n]["rev_θh_encoding_act"], neuron_cats[n]["rev_θh_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
     
     categories["θh"]["fwd_ventral"] = [n for n in 1:max_n if fwd_θh_ventral[n] < p]
     categories["θh"]["fwd_dorsal"] = [n for n in 1:max_n if fwd_θh_dorsal[n] < p]
@@ -375,29 +457,27 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["θh"]["rev_dorsal"] = [n for n in 1:max_n if rev_θh_dorsal[n] < p]
     categories["θh"]["rect_ventral"] = [n for n in 1:max_n if θh_p_vals_rect_ventral[n] < p]
     categories["θh"]["rect_dorsal"] = [n for n in 1:max_n if θh_p_vals_rect_dorsal[n] < p]
-    # use Bonferroni correction since these are expected to be anticorrelated
-    categories["θh"]["dorsal"] = [n for n in 1:max_n if θh_dorsal[n] < p/2]
-    categories["θh"]["ventral"] = [n for n in 1:max_n if θh_ventral[n] < p/2]
-    categories["θh"]["all"] = [n for n in 1:max_n if θh_all[n] < p/4]
+    categories["θh"]["dorsal"] = [n for n in 1:max_n if θh_dorsal[n] < p]
+    categories["θh"]["ventral"] = [n for n in 1:max_n if θh_ventral[n] < p]
+    categories["θh"]["all"] = [n for n in 1:max_n if θh_p_vals_all[n] < p]
 
     corrected_p_vals["θh"]["fwd_ventral"] .= fwd_θh_ventral
     corrected_p_vals["θh"]["fwd_dorsal"] .= fwd_θh_dorsal
     corrected_p_vals["θh"]["rev_ventral"] .= rev_θh_ventral
     corrected_p_vals["θh"]["rev_dorsal"] .= rev_θh_dorsal
-    # use Bonferroni correction since these are expected to be anticorrelated
-    corrected_p_vals["θh"]["dorsal"] .= min.(θh_dorsal .* 2, 1.)
-    corrected_p_vals["θh"]["ventral"] .= min.(θh_ventral .* 2, 1.)
-    corrected_p_vals["θh"]["all"] .= min.(θh_all .* 4, 1.)
+    corrected_p_vals["θh"]["rect_ventral"] .= θh_p_vals_rect_ventral[n]
+    corrected_p_vals["θh"]["rect_dorsal"] .= θh_p_vals_rect_dorsal[n]
+    corrected_p_vals["θh"]["dorsal"] .= θh_dorsal
+    corrected_p_vals["θh"]["ventral"] .= θh_ventral
+    corrected_p_vals["θh"]["all"] .= θh_p_vals_all
     
     
     fwd_P_act = adjust([neuron_cats[n]["fwd_P_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
     fwd_P_inh = adjust([neuron_cats[n]["fwd_P_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
     rev_P_act = adjust([neuron_cats[n]["rev_P_encoding_act"] for n in 1:max_n], BenjaminiHochberg())
     rev_P_inh = adjust([neuron_cats[n]["rev_P_encoding_inh"] for n in 1:max_n], BenjaminiHochberg())
-    P_all = adjust([min(neuron_cats[n]["fwd_P_encoding_act"], neuron_cats[n]["fwd_P_encoding_inh"],
-            neuron_cats[n]["rev_P_encoding_act"], neuron_cats[n]["rev_P_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
-    P_act = adjust([min(neuron_cats[n]["fwd_P_encoding_act"], neuron_cats[n]["rev_P_encoding_act"]) for n in 1:max_n], BenjaminiHochberg())
-    P_inh = adjust([min(neuron_cats[n]["fwd_P_encoding_inh"], neuron_cats[n]["rev_P_encoding_inh"]) for n in 1:max_n], BenjaminiHochberg())
+    P_act = adjust([neuron_cats[n]["P_pos"] for n in 1:max_n], BenjaminiHochberg())
+    P_inh = adjust([neuron_cats[n]["P_neg"] for n in 1:max_n], BenjaminiHochberg())
     
     categories["P"]["fwd_inh"] = [n for n in 1:max_n if fwd_P_inh[n] < p]
     categories["P"]["fwd_act"] = [n for n in 1:max_n if fwd_P_act[n] < p]
@@ -405,10 +485,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     categories["P"]["rev_act"] = [n for n in 1:max_n if rev_P_act[n] < p]
     categories["P"]["rect_pos"] = [n for n in 1:max_n if P_p_vals_rect_pos[n] < p]
     categories["P"]["rect_neg"] = [n for n in 1:max_n if P_p_vals_rect_neg[n] < p]
-    # use Bonferroni correction since these are expected to be anticorrelated
-    categories["P"]["act"] = [n for n in 1:max_n if P_act[n] < p/2]
-    categories["P"]["inh"] = [n for n in 1:max_n if P_inh[n] < p/2]
-    categories["P"]["all"] = [n for n in 1:max_n if P_all[n] < p/4]
+    categories["P"]["act"] = [n for n in 1:max_n if P_act[n] < p]
+    categories["P"]["inh"] = [n for n in 1:max_n if P_inh[n] < p]
+    categories["P"]["all"] = [n for n in 1:max_n if P_p_vals_all[n] < p]
     
     categories["all"] = [n for n in 1:max_n if p_vals_all[n] < p]
 
@@ -416,10 +495,11 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     corrected_p_vals["P"]["fwd_act"] .= fwd_P_act
     corrected_p_vals["P"]["rev_inh"] .= rev_P_inh
     corrected_p_vals["P"]["rev_act"] .= rev_P_act
-    # use Bonferroni correction since these are expected to be anticorrelated
-    corrected_p_vals["P"]["act"] .= min.(P_act .* 2, 1.)
-    corrected_p_vals["P"]["inh"] .= min.(P_inh .* 2, 1.)
-    corrected_p_vals["P"]["all"] .= min.(P_all .* 4, 1.)
+    corrected_p_vals["P"]["rect_pos"] .=  P_p_vals_rect_pos[n]
+    corrected_p_vals["P"]["rect_neg"] .= P_p_vals_rect_neg[n]
+    corrected_p_vals["P"]["act"] .= P_act
+    corrected_p_vals["P"]["inh"] .= P_inh
+    corrected_p_vals["P"]["all"] .= P_p_vals_all
     
     corrected_p_vals["all"] .= p_vals_all
     
@@ -525,11 +605,142 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, 
                     deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
                 end
                 
-                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold)
+                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1,
+                        deconvolved_activities_2, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold, 
+                        ewma1=fit_results[dataset]["sampled_trace_params"][t1,:,:,7], ewma2=fit_results[dataset]["sampled_trace_params"][t2,:,:,7])
             end
         end
     end
     return encoding_changes, encoding_change_p_vals
+end
+
+function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
+    v_keys = ["fwd_slope_pos", "fwd_slope_neg", "rev_slope_pos", "rev_slope_neg", "rect_pos", "rect_neg"]
+    θh_keys = ["fwd_ventral", "fwd_dorsal", "rev_ventral", "rev_dorsal", "rect_ventral", "rect_dorsal"]
+    P_keys = ["fwd_act", "fwd_inh", "rev_act", "rev_inh", "rect_pos", "rect_neg"]
+
+    analysis_dict["v_enc"] = Dict()
+    for k in v_keys
+        analysis_dict["v_enc"][k] = []
+    end
+    analysis_dict["θh_enc"] = Dict()
+    for k in θh_keys
+        analysis_dict["θh_enc"][k] = []
+    end
+    analysis_dict["P_enc"] = Dict()
+    for k in P_keys
+        analysis_dict["P_enc"][k] = []
+    end
+    num_possible_encodings = length(v_keys) + length(θh_keys) + length(P_keys)
+    analysis_dict["joint_encoding"] = zeros(num_possible_encodings, num_possible_encodings)
+    tot = 0
+    analysis_dict["v_enc_matrix"] = zeros(3,3)
+    analysis_dict["θh_enc_matrix"] = zeros(3,3)
+    analysis_dict["P_enc_matrix"] = zeros(3,3)
+    analysis_dict["neuron_subcategorization"] = Dict()
+    subcategories = ["analog_pos", "analog_neg", "fwd_slope_pos_rect_pos", "rev_slope_pos_rect_neg", "fwd_slope_neg_rect_neg", "rev_slope_neg_rect_pos", "fwd_pos_rev_neg", "rev_pos_fwd_neg", "unknown_enc", "nonencoding"]
+    analysis_dict["joint_subencoding"] = zeros(3*length(subcategories), 3*length(subcategories))
+
+    # rect fwd inh, rect fwd, unknown
+    # slow, linear fwd, rect rev inh
+    # linear rev, speed, rect rev
+    for dataset in datasets
+        rng = analysis_dict["rngs_use"][dataset]
+        analysis_dict["neuron_subcategorization"][dataset] = Dict()
+        analysis_dict["neuron_subcategorization"][dataset][rng] = Dict()
+        for beh in ["v", "θh", "P"]
+            analysis_dict["neuron_subcategorization"][dataset][rng][beh] = Dict()
+            for cat in subcategories
+                analysis_dict["neuron_subcategorization"][dataset][rng][beh][cat] = []
+            end
+        end
+            
+        count = 0
+        for neuron in 1:fit_results[dataset]["num_neurons"]
+            encs_all = zeros(Bool, num_possible_encodings)
+            idx=1
+            
+            for (beh, beh_enc, beh_keys, beh_enc_matrix) in [("v", "v_enc", v_keys, "v_enc_matrix"), 
+                        ("θh", "θh_enc", θh_keys, "θh_enc_matrix"), ("P", "P_enc", P_keys, "P_enc_matrix")]
+
+                encs = zeros(Bool,length(beh_keys))
+                for (i,k) in enumerate(beh_keys)
+                    if neuron in analysis_dict["neuron_categorization"][dataset][rng][beh][k]
+                        push!(analysis_dict[beh_enc][k], (dataset, neuron))
+                        encs[i] = 1
+                    end
+                end
+                
+                @assert(!(encs[1] && encs[2]))
+                @assert(!(encs[3] && encs[4]))
+                @assert(!(encs[5] && encs[6]))
+                if encs[1] && encs[4] # speed neuron
+                    @assert(encs[5]) # speed neurons must be rectified
+                    analysis_dict[beh_enc_matrix][2,1] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_pos_rev_neg"], neuron)
+                elseif encs[2] && encs[3] # slow neuron
+                    @assert(encs[6]) # slow neurons must be rectified
+                    analysis_dict[beh_enc_matrix][1,2] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"], neuron)
+                elseif encs[1] && encs[5] # forward positively-rectified
+                    analysis_dict[beh_enc_matrix][3,1] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_pos_rect_pos"], neuron)
+                elseif encs[4] && encs[5] # reversal positively-rectified
+                    analysis_dict[beh_enc_matrix][2,3] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_neg_rect_pos"], neuron)
+                elseif encs[2] && encs[6] # reversal negatively-rectified
+                    analysis_dict[beh_enc_matrix][3,2] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_neg_rect_neg"], neuron)
+                elseif encs[3] && encs[6] # forward negatively-rectified
+                    analysis_dict[beh_enc_matrix][1,3] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_pos_rect_neg"], neuron)
+                elseif encs[2] && encs[4] # linear reversal
+                    analysis_dict[beh_enc_matrix][2,2] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_neg"], neuron)
+                elseif encs[1] && encs[3] # linear forward
+                    analysis_dict[beh_enc_matrix][1,1] += 1
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_pos"], neuron)
+                elseif any(encs[1:6])
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["unknown_enc"], neuron)
+                    analysis_dict[beh_enc_matrix][3,3] += 1
+                    @assert(sum(encs[1:6]) == 1)
+                else
+                    @assert(sum(encs[1:6]) == 0)
+                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["nonencoding"], neuron)
+                end
+                
+                encs_all[idx:idx+length(beh_keys)-1] .= encs
+                idx += length(beh_keys)
+            end
+            
+            for i=1:length(encs_all)
+                for j=i+1:length(encs_all)
+                    if encs_all[i] && encs_all[j]
+                        analysis_dict["joint_encoding"][i,j] += 1
+                        analysis_dict["joint_encoding"][j,i] += 1
+                    end
+                end
+                if encs_all[i]
+                    analysis_dict["joint_encoding"][i,i] += 1
+                end
+            end
+            
+            for (i, beh1) in enumerate(["v", "θh", "P"])
+                for (j, cat1) in enumerate(subcategories)
+                    for (x, beh2) in enumerate(["v", "θh", "P"])
+                        for (y, cat2) in enumerate(subcategories)
+                            if neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh1][cat1] && neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh2][cat2] 
+                                analysis_dict["joint_subencoding"][length(subcategories)*(i-1)+j,length(subcategories)*(x-1)+y] += 1
+                            end
+                        end
+                    end
+                end
+            end
+                    
+            
+            tot += 1
+        end
+    end
 end
 
 function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categorization, sampled_trace_params)

@@ -619,7 +619,7 @@ end
 function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     v_keys = ["fwd_slope_pos", "fwd_slope_neg", "rev_slope_pos", "rev_slope_neg", "rect_pos", "rect_neg"]
     θh_keys = ["fwd_ventral", "fwd_dorsal", "rev_ventral", "rev_dorsal", "rect_ventral", "rect_dorsal"]
-    P_keys = ["fwd_act", "fwd_inh", "rev_act", "rev_inh", "rect_pos", "rect_neg"]
+    P_keys = ["fwd_act", "fwd_inh", "rev_act", "rev_inh", "rect_act", "rect_inh"]
 
     analysis_dict["v_enc"] = Dict()
     for k in v_keys
@@ -647,100 +647,101 @@ function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     # slow, linear fwd, rect rev inh
     # linear rev, speed, rect rev
     for dataset in datasets
-        rng = analysis_dict["rngs_use"][dataset]
-        analysis_dict["neuron_subcategorization"][dataset] = Dict()
-        analysis_dict["neuron_subcategorization"][dataset][rng] = Dict()
-        for beh in ["v", "θh", "P"]
-            analysis_dict["neuron_subcategorization"][dataset][rng][beh] = Dict()
-            for cat in subcategories
-                analysis_dict["neuron_subcategorization"][dataset][rng][beh][cat] = []
+        for rng in 1:length(fit_results[dataset]["ranges"])
+            analysis_dict["neuron_subcategorization"][dataset] = Dict()
+            analysis_dict["neuron_subcategorization"][dataset][rng] = Dict()
+            for beh in ["v", "θh", "P"]
+                analysis_dict["neuron_subcategorization"][dataset][rng][beh] = Dict()
+                for cat in subcategories
+                    analysis_dict["neuron_subcategorization"][dataset][rng][beh][cat] = []
+                end
             end
-        end
-            
-        count = 0
-        for neuron in 1:fit_results[dataset]["num_neurons"]
-            encs_all = zeros(Bool, num_possible_encodings)
-            idx=1
-            
-            for (beh, beh_enc, beh_keys, beh_enc_matrix) in [("v", "v_enc", v_keys, "v_enc_matrix"), 
-                        ("θh", "θh_enc", θh_keys, "θh_enc_matrix"), ("P", "P_enc", P_keys, "P_enc_matrix")]
+                
+            count = 0
+            for neuron in 1:fit_results[dataset]["num_neurons"]
+                encs_all = zeros(Bool, num_possible_encodings)
+                idx=1
+                
+                for (beh, beh_enc, beh_keys, beh_enc_matrix) in [("v", "v_enc", v_keys, "v_enc_matrix"), 
+                            ("θh", "θh_enc", θh_keys, "θh_enc_matrix"), ("P", "P_enc", P_keys, "P_enc_matrix")]
 
-                encs = zeros(Bool,length(beh_keys))
-                for (i,k) in enumerate(beh_keys)
-                    if neuron in analysis_dict["neuron_categorization"][dataset][rng][beh][k]
-                        push!(analysis_dict[beh_enc][k], (dataset, neuron))
-                        encs[i] = 1
+                    encs = zeros(Bool,length(beh_keys))
+                    for (i,k) in enumerate(beh_keys)
+                        if neuron in analysis_dict["neuron_categorization"][dataset][rng][beh][k]
+                            push!(analysis_dict[beh_enc][k], (dataset, neuron))
+                            encs[i] = 1
+                        end
+                    end
+                    
+                    @assert(!(encs[1] && encs[2]))
+                    @assert(!(encs[3] && encs[4]))
+                    @assert(!(encs[5] && encs[6]))
+                    if encs[1] && encs[4] # speed neuron
+                        @assert(encs[5]) # speed neurons must be rectified
+                        analysis_dict[beh_enc_matrix][2,1] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_pos_rev_neg"], neuron)
+                    elseif encs[2] && encs[3] # slow neuron
+                        @assert(encs[6]) # slow neurons must be rectified
+                        analysis_dict[beh_enc_matrix][1,2] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"], neuron)
+                    elseif encs[1] && encs[5] # forward positively-rectified
+                        analysis_dict[beh_enc_matrix][3,1] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_pos_rect_pos"], neuron)
+                    elseif encs[4] && encs[5] # reversal positively-rectified
+                        analysis_dict[beh_enc_matrix][2,3] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_neg_rect_pos"], neuron)
+                    elseif encs[2] && encs[6] # reversal negatively-rectified
+                        analysis_dict[beh_enc_matrix][3,2] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_neg_rect_neg"], neuron)
+                    elseif encs[3] && encs[6] # forward negatively-rectified
+                        analysis_dict[beh_enc_matrix][1,3] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_pos_rect_neg"], neuron)
+                    elseif encs[2] && encs[4] # linear reversal
+                        analysis_dict[beh_enc_matrix][2,2] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_neg"], neuron)
+                    elseif encs[1] && encs[3] # linear forward
+                        analysis_dict[beh_enc_matrix][1,1] += 1
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_pos"], neuron)
+                    elseif any(encs[1:6])
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["unknown_enc"], neuron)
+                        analysis_dict[beh_enc_matrix][3,3] += 1
+                        @assert(sum(encs[1:6]) == 1)
+                    else
+                        @assert(sum(encs[1:6]) == 0)
+                        push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["nonencoding"], neuron)
+                    end
+                    
+                    encs_all[idx:idx+length(beh_keys)-1] .= encs
+                    idx += length(beh_keys)
+                end
+                
+                for i=1:length(encs_all)
+                    for j=i+1:length(encs_all)
+                        if encs_all[i] && encs_all[j]
+                            analysis_dict["joint_encoding"][i,j] += 1
+                            analysis_dict["joint_encoding"][j,i] += 1
+                        end
+                    end
+                    if encs_all[i]
+                        analysis_dict["joint_encoding"][i,i] += 1
                     end
                 end
                 
-                @assert(!(encs[1] && encs[2]))
-                @assert(!(encs[3] && encs[4]))
-                @assert(!(encs[5] && encs[6]))
-                if encs[1] && encs[4] # speed neuron
-                    @assert(encs[5]) # speed neurons must be rectified
-                    analysis_dict[beh_enc_matrix][2,1] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_pos_rev_neg"], neuron)
-                elseif encs[2] && encs[3] # slow neuron
-                    @assert(encs[6]) # slow neurons must be rectified
-                    analysis_dict[beh_enc_matrix][1,2] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"], neuron)
-                elseif encs[1] && encs[5] # forward positively-rectified
-                    analysis_dict[beh_enc_matrix][3,1] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_pos_rect_pos"], neuron)
-                elseif encs[4] && encs[5] # reversal positively-rectified
-                    analysis_dict[beh_enc_matrix][2,3] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_neg_rect_pos"], neuron)
-                elseif encs[2] && encs[6] # reversal negatively-rectified
-                    analysis_dict[beh_enc_matrix][3,2] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_neg_rect_neg"], neuron)
-                elseif encs[3] && encs[6] # forward negatively-rectified
-                    analysis_dict[beh_enc_matrix][1,3] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_pos_rect_neg"], neuron)
-                elseif encs[2] && encs[4] # linear reversal
-                    analysis_dict[beh_enc_matrix][2,2] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_neg"], neuron)
-                elseif encs[1] && encs[3] # linear forward
-                    analysis_dict[beh_enc_matrix][1,1] += 1
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_pos"], neuron)
-                elseif any(encs[1:6])
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["unknown_enc"], neuron)
-                    analysis_dict[beh_enc_matrix][3,3] += 1
-                    @assert(sum(encs[1:6]) == 1)
-                else
-                    @assert(sum(encs[1:6]) == 0)
-                    push!(analysis_dict["neuron_subcategorization"][dataset][rng][beh]["nonencoding"], neuron)
-                end
-                
-                encs_all[idx:idx+length(beh_keys)-1] .= encs
-                idx += length(beh_keys)
-            end
-            
-            for i=1:length(encs_all)
-                for j=i+1:length(encs_all)
-                    if encs_all[i] && encs_all[j]
-                        analysis_dict["joint_encoding"][i,j] += 1
-                        analysis_dict["joint_encoding"][j,i] += 1
-                    end
-                end
-                if encs_all[i]
-                    analysis_dict["joint_encoding"][i,i] += 1
-                end
-            end
-            
-            for (i, beh1) in enumerate(["v", "θh", "P"])
-                for (j, cat1) in enumerate(subcategories)
-                    for (x, beh2) in enumerate(["v", "θh", "P"])
-                        for (y, cat2) in enumerate(subcategories)
-                            if neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh1][cat1] && neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh2][cat2] 
-                                analysis_dict["joint_subencoding"][length(subcategories)*(i-1)+j,length(subcategories)*(x-1)+y] += 1
+                for (i, beh1) in enumerate(["v", "θh", "P"])
+                    for (j, cat1) in enumerate(subcategories)
+                        for (x, beh2) in enumerate(["v", "θh", "P"])
+                            for (y, cat2) in enumerate(subcategories)
+                                if neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh1][cat1] && neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh2][cat2] 
+                                    analysis_dict["joint_subencoding"][length(subcategories)*(i-1)+j,length(subcategories)*(x-1)+y] += 1
+                                end
                             end
                         end
                     end
                 end
+                        
+                
+                tot += 1
             end
-                    
-            
-            tot += 1
         end
     end
 end

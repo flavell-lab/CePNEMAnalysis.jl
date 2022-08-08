@@ -647,8 +647,8 @@ function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     # slow, linear fwd, rect rev inh
     # linear rev, speed, rect rev
     for dataset in datasets
+        analysis_dict["neuron_subcategorization"][dataset] = Dict()
         for rng in 1:length(fit_results[dataset]["ranges"])
-            analysis_dict["neuron_subcategorization"][dataset] = Dict()
             analysis_dict["neuron_subcategorization"][dataset][rng] = Dict()
             for beh in ["v", "θh", "P"]
                 analysis_dict["neuron_subcategorization"][dataset][rng][beh] = Dict()

@@ -203,12 +203,12 @@ Categorizes all neurons from their deconvolved activities.
 
 # Arguments:
 - `deconvolved_activities_1`: Deconvolved activities of neurons.
-- `deconvolved_activities_2`: Either 0 (to check neuron encoding), or deconvolved activities of neurons at a different time point (to check encoding change).
+- `deconvolved_activities_2`: Either 0 (to check neuron encoding), or deconvolved activities of neurons at an earlier time point (to check encoding change).
 - `p`: Significant p-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `threshold`: Deconvolved activity must differ by at least this much
-- `ewma1` (optional): If set, compute EWMA difference between activities and include it in the `all` category
-- `ewma2` (optional): If set, compute EWMA difference between activities and include it in the `all` category
+- `ewma1` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the later timepoint here.
+- `ewma2` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the earlier timepoint here.
 """
 function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real; ewma1=nothing, ewma2=nothing)
     categories = Dict()
@@ -377,8 +377,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
         push!(all_p_vals, min(1,2*min(neuron_cats[n]["v_fwd"], neuron_cats[n]["v_rev"])))
 
         if compute_ewma
-            ewma_pos = prob_P_greater_Q(ewma1[n,:], ewma2[n,:])
-            ewma_neg = prob_P_greater_Q(ewma2[n,:], ewma1[n,:])
+            ewma_neg = prob_P_greater_Q(ewma1[n,:], ewma2[n,:])
+            ewma_pos = prob_P_greater_Q(ewma2[n,:], ewma1[n,:])
             corrected_p_vals["ewma_pos"][n] = ewma_pos
             corrected_p_vals["ewma_neg"][n] = ewma_neg
             push!(all_p_vals, min(1,2*min(ewma_pos, ewma_neg)))
@@ -607,9 +607,9 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, 
                     deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
                 end
                 
-                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_1,
-                        deconvolved_activities_2, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold, 
-                        ewma1=fit_results[dataset]["sampled_trace_params"][t1,:,:,7], ewma2=fit_results[dataset]["sampled_trace_params"][t2,:,:,7])
+                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_2,
+                        deconvolved_activities_1, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold, 
+                        ewma1=fit_results[dataset]["sampled_trace_params"][t2,:,:,7], ewma2=fit_results[dataset]["sampled_trace_params"][t1,:,:,7])
             end
         end
     end

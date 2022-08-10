@@ -584,16 +584,15 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, 
 
                 # regions don't intersect 
                 if sort(v_rng) != v_rng
-                    @warn("velocity intervals don't overlap")
+                    @warn("velocity intervals don't overlap. Skipping...")
                     continue
                 end
                 if  sort(θh_rng) != θh_rng
-                    @warn("head angle intervals don't overlap")
-                    continue
+                    @warn("head curvature intervals don't overlap. Using mean...")
+                    θh_rng = [mean(θh_rng), mean(θh_rng)]
                 end
                 if sort(P_rng) != P_rng
-                    @warn("pumping intervals don't overlap")
-                    continue
+                    P_rng = [mean(P_rng), mean(P_rng)]
                 end
                 
                 deconvolved_activities_1 = Dict()

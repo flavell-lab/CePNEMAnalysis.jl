@@ -497,7 +497,7 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
         end
         Plots.plot!(x_rng_plot, f, linewidth=2, label=nothing, color=palette(:tab10)[color_idx])
     elseif !isnothing(plot_fit_idx)
-        plot_idx = plot_fit_idx == :median ? size(fit_results[dataset]["sampled_trace_params"], 3) : plot_fit_idx
+        plot_idx = plot_fit_idx == :median ? (1:size(fit_results[dataset]["sampled_trace_params"], 3)) : plot_fit_idx
         if use_heatmap || plot_fit_idx == :median
             y_min = y_rng[1]
             y_max = y_rng[end]

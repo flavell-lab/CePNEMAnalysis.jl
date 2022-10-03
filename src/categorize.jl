@@ -211,7 +211,7 @@ Categorizes all neurons from their deconvolved activities.
 - `ewma1` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the later timepoint here.
 - `ewma2` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the earlier timepoint here.
 """
-function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real; compute_feeding::Bool=true, ewma1=nothing, ewma2=nothing)
+function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real; σ_ratio=nothing, compute_feeding::Bool=true, ewma1=nothing, ewma2=nothing)
     categories = Dict()
     categories["v"] = Dict()
     categories["v"]["rev"] = []
@@ -251,7 +251,10 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     neuron_cats = Dict()
     for neuron = keys(deconvolved_activities_1)
         signal = std(trace_original[neuron,:]) / mean(trace_original[neuron, :])
-        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron] .* signal, deconvolved_activities_2[neuron] .* signal, threshold)
+        if isnothing(σ_ratio)
+            σ_ratio = ones(length(deconvolved_activities_1[neuron]))
+        end
+        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron] .* signal .* σ_ratio, deconvolved_activities_2[neuron] .* signal .* σ_ratio, threshold)
     end
     
     max_n = maximum(keys(neuron_cats))

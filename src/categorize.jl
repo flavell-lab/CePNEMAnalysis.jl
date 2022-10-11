@@ -325,9 +325,9 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     p_vals_all = ones(max_n)
 
 
-    v_p_rel_enc_str[neuron] = Dict()
-    θh_p_rel_enc_str[neuron] = Dict()
-    P_p_rel_enc_str[neuron] = Dict()
+    v_p_rel_enc_str = Dict()
+    θh_p_rel_enc_str = Dict()
+    P_p_rel_enc_str = Dict()
 
     for neuron in keys(neuron_cats)
         v_p_rel_enc_str[neuron] = 1-prob_P_greater_Q(relative_encoding_strength[neuron]["v"], rel_enc_str_correct)

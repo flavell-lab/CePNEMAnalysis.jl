@@ -22,6 +22,7 @@ include("plot.jl")
 include("tsne.jl")
 include("cluster.jl")
 include("pca.jl")
+include("strength.jl")
 
 export
     # data.jl

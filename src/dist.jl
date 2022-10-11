@@ -187,6 +187,12 @@ function prob_P_greater_Q(P,Q)
     return p_greater_q / (P_tot * Q_tot)
 end
 
+"""
+Given `p`-values `p1` and `p2` for different events, computes the `p`-value for the AND of those events.
+"""
+function compute_AND(p1, p2)
+    return 1 - (1-p1)*(1-p2)
+end
 
 function project_posterior(sampled_trace_params, params_rm; percentile_thresh=1)
     if length(params_rm) == 0

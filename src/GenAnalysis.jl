@@ -72,5 +72,7 @@ export
     invert_array,
     # cluster.jl
     cluster_dist,
-    dendrocolor
+    dendrocolor,
+    # strength.jl
+    get_relative_encoding_strength_mt
 end # module

@@ -11,7 +11,7 @@ Computes the relative encoding strength of the three behaviors, together with st
 """
 function get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron; max_idx=10001, dataset_mapping=nothing)
     dataset_fit = fit_results[dataset]
-    ps_fit = dataset_fit["sampled_trace_params"]
+    ps_fit = deepcopy(dataset_fit["sampled_trace_params"])
     rng_t = dataset_fit["ranges"][rng]
     max_t = length(rng_t)
     
@@ -42,8 +42,7 @@ function get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron; ma
     model_deconv_P = zeros(max_idx, max_t)
         
      @sync Threads.@threads for idx=1:max_idx
-        ps = deepcopy(ps_fit[rng,neuron,idx,1:8])
-
+        ps = ps_fit[rng,neuron,idx,1:8]
 
         model_full = model_nl8(max_t, ps..., b_v, b_θh, b_P)
         model_nov = model_nl8(max_t, ps..., b_null, b_θh, b_P)

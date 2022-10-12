@@ -61,16 +61,16 @@ function get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron; ma
             model_deconv_P[idx, i_t] = deconvolved_model_nl8(ps, b_null[i_t], b_null[i_t], b_P[i_t])
         end       
         
-        ps[6] = mean(model_deconv) # set initial condition to mean so as not to contaminate convolution computation
+        ps[6] = mean(model_deconv[idx,:]) # set initial condition to mean so as not to contaminate convolution computation
         model_full_ps6corr = model_nl8(max_t, ps..., b_v, b_θh, b_P)
 
-        ps[6] = mean(model_deconv_v)
+        ps[6] = mean(model_deconv_v[idx,:])
         model_v = model_nl8(max_t, ps..., b_v, b_null, b_null)
 
-        ps[6] = mean(model_deconv_θh)
+        ps[6] = mean(model_deconv_θh[idx,:])
         model_θh = model_nl8(max_t, ps..., b_null, b_θh, b_null)
 
-        ps[6] = mean(model_deconv_P)
+        ps[6] = mean(model_deconv_P[idx,:])
         model_P = model_nl8(max_t, ps..., b_null, b_null, b_P)
         
         std_full[idx] = std(model_full)

@@ -78,7 +78,7 @@ function get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron; ma
         std_θh[idx] = std(model_θh)
         std_P[idx] = std(model_P)
 
-        std_full_nops6[idx] = std(model_full_nops6)
+        std_full_ps6corr[idx] = std(model_full_ps6corr)
         std_deconv[idx] = std(model_deconv[idx,:])
         std_deconv_v[idx] = std(model_deconv_v[idx,:])
         std_deconv_θh[idx] = std(model_deconv_θh[idx,:])

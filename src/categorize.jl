@@ -132,11 +132,19 @@ To find encoding change, set it to a different time window.
 To find distance between neurons, set `compute_p = false` and specify the `metric` (default `abs`)
 to use to compare medians of the two posteriors.
 """
-function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold::Real; compute_p::Bool=true, metric::Function=abs)
+function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, threshold_artifact::Real, threshold_weak::Real, relative_encoding_strength; compute_p::Bool=true, metric::Function=abs)
     categories = Dict()
     
     s = size(deconvolved_activity_1)
     categories["v_encoding"] = compute_p ? ones(s[2], s[2], s[3], s[4]) : zeros(s[2], s[2], s[3], s[4])
+
+    v_ratio = relative_encoding_strength["std_deconv_v"] ./ relative_encoding_strength["std_v"] 
+    θh_ratio = relative_encoding_strength["std_deconv_θh"] ./ relative_encoding_strength["std_θh"]
+    P_ratio = relative_encoding_strength["std_deconv_P"] ./ relative_encoding_strength["std_P"]
+
+    v_thresh = max.(threshold_artifact / signal, v_ratio .* threshold_weak)
+    θh_thresh = max.(threshold_artifact / signal, θh_ratio .* threshold_weak)
+    P_thresh = max.(threshold_artifact / signal, P_ratio .* threshold_weak)
     
     for (i,j) in VALID_V_COMPARISONS
         if i > j
@@ -147,56 +155,56 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, threshold
                 # count equal points as 0.5
                 diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                 diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
             end
         end
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .- (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .- (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .+ (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .+ (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
 
     for i = [1,4]
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,2,1]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,2,1]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_2) - median(diff_1))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,1,2]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,1,2]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_2) - median(diff_1))
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
     
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ threshold, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- threshold, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
 
     return categories
 end
@@ -209,15 +217,15 @@ Categorizes all neurons from their deconvolved activities.
 - `deconvolved_activities_2`: Either 0 (to check neuron encoding), or deconvolved activities of neurons at an earlier time point (to check encoding change).
 - `p`: Significant p-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
-- `threshold`: Deconvolved activity must differ by at least this much
+- `threshold_artifact`: Deconvolved activity must differ by at least this much, to filter out motion artifacts
+- `threshold_weak`: Non-deconvolved activity must differ by at least this much, to filter out weak overfitting encodings
 - `relative_encoding_strength`: Relative encoding strength of the neurons
-- `ewma_correct`: Whether to apply relative encoding strength-based EWMA correction
 - `rel_enc_str_correct`: Threshold for deleting neurons with too low relative encoding strength.
 - `compute_feeding` (optional, default `true`): Whether to consider feeding behavior in the analysis.
 - `ewma1` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the later timepoint here.
 - `ewma2` (optional): If set, compute EWMA difference between activities and include it in the `all` category. Put the EWMA values for the earlier timepoint here.
 """
-function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold::Real, relative_encoding_strength; ewma_correct::Bool=false, rel_enc_str_correct::Float64=0.0, compute_feeding::Bool=true, ewma1=nothing, ewma2=nothing)
+function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, p::Real, θh_pos_is_ventral::Bool, trace_original, threshold_artifact::Real, threshold_weak::Real, relative_encoding_strength; rel_enc_str_correct::Float64=0.0, compute_feeding::Bool=true, ewma1=nothing, ewma2=nothing)
     categories = Dict()
     categories["v"] = Dict()
     categories["v"]["rev"] = []
@@ -257,12 +265,8 @@ function categorize_neurons(deconvolved_activities_1, deconvolved_activities_2, 
     neuron_cats = Dict()
     for neuron = keys(deconvolved_activities_1)
         signal = std(trace_original[neuron,:]) / mean(trace_original[neuron, :])
-        if !ewma_correct
-            σ_r = ones(size(deconvolved_activities_1[neuron],1))
-        else
-            σ_r = relative_encoding_strength[neuron]["std"] ./ relative_encoding_strength[neuron]["std_deconv"]
-        end
-        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron] .* signal .* σ_r, deconvolved_activities_2[neuron] .* signal .* σ_r, threshold)
+
+        neuron_cats[neuron] = neuron_p_vals(deconvolved_activities_1[neuron], deconvolved_activities_2[neuron], signal, threshold_artifact, threshold_weak, relative_encoding_strength[neuron])
     end
 
     max_n = maximum(keys(neuron_cats))
@@ -545,12 +549,12 @@ and the raw (not multiple-hypothesis corrected) p-values.
 - `P_ranges`: Ranges of feeding values
 - `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
-- `threshold`: Threshold for computing encoding.
-- `P_diff_thresh`: Minimum feeding variance in a time range necessary for trying to compute feeding info.
-- `ewma_correct`: Whether to apply relative encoding strength-based EWMA correction
-- `rel_enc_str_correct`: Threshold for deleting neurons with too low relative encoding strength.
+- `threshold_artifact`: Deconvolved activity must differ by at least this much, to filter out motion artifacts
+- `threshold_weak`: Non-deconvolved activity must differ by at least this much, to filter out weak overfitting encodings
+- `P_diff_thresh` (optional, default `0`): Minimum feeding variance in a time range necessary for trying to compute feeding info.
+- `rel_enc_str_correct` (optional, default `0`): Threshold for deleting neurons with too low relative encoding strength.
 """
-function categorize_all_neurons(fit_results, deconvolved_activity, P_ranges, p, θh_pos_is_ventral, threshold, relative_encoding_strength; P_diff_thresh=0.0, ewma_correct::Bool=false, rel_enc_str_correct=0.0)
+function categorize_all_neurons(fit_results, deconvolved_activity, P_ranges, p, θh_pos_is_ventral, threshold_artifact, threshold_weak, relative_encoding_strength; P_diff_thresh=0.0, rel_enc_str_correct=0.0)
     neuron_categorization = Dict()
     neuron_p = Dict()
     neuron_cats = Dict()
@@ -567,7 +571,7 @@ function categorize_all_neurons(fit_results, deconvolved_activity, P_ranges, p, 
             compute_feeding = (P_ranges[dataset][rng][2] - P_ranges[dataset][rng][1]) > P_diff_thresh
             rel_enc_str = (isnothing(relative_encoding_strength) ? nothing : relative_encoding_strength[dataset][rng])
             neuron_categorization[dataset][rng], neuron_p[dataset][rng], neuron_cats[dataset][rng] = categorize_neurons(deconvolved_activity[dataset][rng], empty_cat, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], 
-                    threshold, relative_encoding_strength[dataset][rng], compute_feeding=compute_feeding, ewma_correct=ewma_correct, rel_enc_str_correct=rel_enc_str_correct)
+                    threshold_artifact, threshold_weak, relative_encoding_strength[dataset][rng], compute_feeding=compute_feeding, rel_enc_str_correct=rel_enc_str_correct)
         end
     end
     return neuron_categorization, neuron_p, neuron_cats
@@ -585,7 +589,7 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
 - `relative_encoding_strength`: Relative encoding strength of neurons.
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold, rngs, relative_encoding_strength; beh_percent=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, threshold_weak, rngs, relative_encoding_strength; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
     @showprogress for dataset in keys(fit_results)

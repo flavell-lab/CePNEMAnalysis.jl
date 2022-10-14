@@ -19,23 +19,19 @@ function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, rela
                 for k in ["v_rect_neg", "v_rect_pos", "v_fwd", "v_rev"]
                     tuning_strength[dataset][rng][neuron][k] /= v_diff
                 end
-
-                tuning_strength[dataset][rng][neuron]["v_encoding"] ./= v_diff
+                s = size(zeros_da)
+                for (i,j) in VALID_V_COMPARISONS
+                    tuning_strength[dataset][rng][neuron]["v_encoding"][i,j,:,:] ./= abs(v_ranges[dataset][rng][j] - v_ranges[dataset][rng][i])
+                end
 
                 for k in ["rev_θh_encoding_inh", "rev_θh_encoding_act", "fwd_θh_encoding_inh", "fwd_θh_encoding_act", 
                         "θh_rect_neg", "θh_rect_pos", "θh_neg", "θh_pos"]
                     tuning_strength[dataset][rng][neuron][k] /= θh_diff
-                    if k in ["θh_neg", "θh_pos"]
-                        tuning_strength[dataset][rng][neuron][k] /= 2
-                    end
                 end
 
                 for k in ["rev_P_encoding_inh", "rev_P_encoding_act", "fwd_P_encoding_inh", "fwd_P_encoding_act", 
                     "P_rect_neg", "P_rect_pos", "P_neg", "P_pos"]
                     tuning_strength[dataset][rng][neuron][k] /= P_diff
-                    if k in ["P_neg", "P_pos"]
-                        tuning_strength[dataset][rng][neuron][k] /= 2
-                    end
                 end
                 if θh_pos_is_ventral[dataset]
                     tuning_strength[dataset][rng][neuron]["rev_θh_encoding_ventral"] = tuning_strength[dataset][rng][neuron]["rev_θh_encoding_act"] 

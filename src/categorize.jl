@@ -654,6 +654,59 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_a
     return encoding_changes, encoding_change_p_vals
 end
 
+
+"""
+Corrects encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
+"""
+function correct_encoding_changes!(analysis_dict)
+    encoding_changes_corrected = Dict()
+    @showprogress for dataset = keys(analysis_dict["encoding_changes"])
+        encoding_changes_corrected[dataset] = Dict()
+        for rngs = keys(analysis_dict["encoding_changes"][dataset])
+            encoding_changes_corrected[dataset][rngs] = Dict()
+            for cat = keys(analysis_dict["encoding_changes"][dataset][rngs])
+                if typeof(analysis_dict["encoding_changes"][dataset][rngs][cat]) <: Dict
+                    encoding_changes_corrected[dataset][rngs][cat] = Dict()
+                    
+                    for subcat = keys(analysis_dict["encoding_changes"][dataset][rngs][cat])
+                        encoding_changes_corrected[dataset][rngs][cat][subcat] = Int32[]
+                        for rng = 1:length(fit_results[dataset]["ranges"])                            
+                            for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat][subcat]
+                                # neurons must be encoding to be encoding-changing
+                                if !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] || neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
+                                    continue
+                                end
+                                if rng == 1
+                                    push!(encoding_changes_corrected[dataset][rngs][cat][subcat], neuron)
+                                end
+                            end
+                        end
+                    end
+                else
+                    encoding_changes_corrected[dataset][rngs][cat] = Int32[]
+                    for rng = 1:length(fit_results[dataset]["ranges"])
+                        for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat]
+                            # neurons must be encoding to be encoding-changing
+                            if !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] || neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
+                                continue
+                            end
+                            # EWMA-only encoding changes require encoding in both time segments
+                            if !(neuron in analysis_dict["encoding_changes"][dataset][rngs]["v"]["all"] || neuron in analysis_dict["encoding_changes"][dataset][rngs]["θh"]["all"] || neuron in analysis_dict["encoding_changes"][dataset][rngs]["P"]["all"]) && 
+                                     !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] && neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
+                                continue
+                            end
+                            if rng == 1
+                                push!(encoding_changes_corrected[dataset][rngs][cat], neuron)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return encoding_changes_corrected
+end
+
 function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     v_keys = ["fwd_slope_pos", "fwd_slope_neg", "rev_slope_pos", "rev_slope_neg", "rect_pos", "rect_neg"]
     θh_keys = ["fwd_ventral", "fwd_dorsal", "rev_ventral", "rev_dorsal", "rect_ventral", "rect_dorsal"]
@@ -784,19 +837,21 @@ function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     end
 end
 
-function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categorization, sampled_trace_params)
+function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categorization, relative_encoding_strength)
     encoding = []
+    relative_enc_str = []
     for beh in ["v", "θh", "P"]
         for k in keys(neuron_categorization[dataset][rng][beh])
             if neuron in neuron_categorization[dataset][rng][beh][k]
                 push!(encoding, (beh, k))
             end
         end
+        push!(relative_enc_str, median(relative_encoding_strength[dataset][rng][neuron][beh]))
     end
 
-    s = compute_s(median(sampled_trace_params[rng,neuron,:,7]))
+    s = compute_s(median(fit_results[dataset]["sampled_trace_params"][rng,neuron,:,7]))
     τ = log.(s ./ (s .+ 1), 0.5) .* fit_results[dataset]["avg_timestep"]
-    return encoding, τ
+    return encoding, relative_enc_str, τ
 end
 
 # TODO: deal with different ranges in different datasets

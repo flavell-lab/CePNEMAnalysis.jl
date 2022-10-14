@@ -155,56 +155,56 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, t
                 # count equal points as 0.5
                 diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                 diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
             end
         end
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .- (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .- (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .+ (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .+ (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
 
     for i = [1,4]
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,2,1]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,2,1]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_2 ./ θh_ratio) - signal*median(diff_1 ./ θh_ratio))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,1,2]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,1,2]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_2) - median(diff_1))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2 ./ P_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_2 ./ P_ratio) - signal*median(diff_1 ./ P_ratio))
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
+    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
+    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
     
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2))
+    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
-    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(median(diff_1) - median(diff_2))
+    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2 ./ P_ratio))
+    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2 ./ P_ratio))
 
     return categories
 end

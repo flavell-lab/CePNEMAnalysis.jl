@@ -24,6 +24,7 @@ include("tsne.jl")
 include("cluster.jl")
 include("pca.jl")
 include("strength.jl")
+include("tuning.jl")
 
 export
     # data.jl
@@ -77,5 +78,9 @@ export
     cluster_dist,
     dendrocolor,
     # strength.jl
-    get_relative_encoding_strength_mt
+    get_relative_encoding_strength_mt,
+    # tuning.jl
+    get_forwardness,
+    get_dorsalness,
+    get_tuning_strength
 end # module

@@ -658,7 +658,7 @@ end
 """
 Corrects encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
 """
-function correct_encoding_changes!(analysis_dict)
+function correct_encoding_changes(analysis_dict)
     encoding_changes_corrected = Dict()
     @showprogress for dataset = keys(analysis_dict["encoding_changes"])
         encoding_changes_corrected[dataset] = Dict()

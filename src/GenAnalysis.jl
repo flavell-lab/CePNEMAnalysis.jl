@@ -49,7 +49,7 @@ export
     subcategorize_all_neurons!,
     get_neuron_category,
     detect_encoding_changes,
-    correct_encoding_changes!,
+    correct_encoding_changes,
     get_enc_stats,
     get_enc_stats_pool,
     get_enc_change_stats,

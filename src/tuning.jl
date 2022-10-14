@@ -19,7 +19,7 @@ function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, rela
                 for k in ["v_rect_neg", "v_rect_pos", "v_fwd", "v_rev"]
                     tuning_strength[dataset][rng][neuron][k] /= v_diff
                 end
-                s = size(zeros_da)
+                s = size(zero_da)
                 for (i,j) in VALID_V_COMPARISONS
                     tuning_strength[dataset][rng][neuron]["v_encoding"][i,j,:,:] ./= abs(v_ranges[dataset][rng][j] - v_ranges[dataset][rng][i])
                 end

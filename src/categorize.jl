@@ -564,7 +564,6 @@ function categorize_all_neurons(fit_results, deconvolved_activity, P_ranges, p, 
         neuron_cats[dataset] = Dict()
         for rng = 1:length(fit_results[dataset]["ranges"])
             empty_cat = Dict()
-            neuron_cats[rng] = Dict()
             for n = 1:fit_results[dataset]["num_neurons"]
                 empty_cat[n] = zeros(size(deconvolved_activity[dataset][rng][n]))
             end
@@ -584,12 +583,12 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `fit_results`: Gen fit results.
 - `p`: Significant `p`-value.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
-- `threshold`: Threshold for encoding change difference
+- `threshold_artifact`: Motion artifact threshold for encoding change difference
 - `rngs`: Dictionary of which ranges to use per dataset
 - `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
 - `relative_encoding_strength`: Relative encoding strength of neurons.
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, threshold_weak, rngs, relative_encoding_strength; beh_percent=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, relative_encoding_strength; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
     @showprogress for dataset in keys(fit_results)
@@ -646,7 +645,7 @@ function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_a
                 end
                 
                 encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_2,
-                        deconvolved_activities_1, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold, relative_encoding_strength[dataset][i1],
+                        deconvolved_activities_1, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold_artifact, 0, relative_encoding_strength[dataset][i1],
                         ewma1=fit_results[dataset]["sampled_trace_params"][t2,:,:,7], ewma2=fit_results[dataset]["sampled_trace_params"][t1,:,:,7], compute_feeding=false)
             end
         end

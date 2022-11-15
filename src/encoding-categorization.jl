@@ -576,136 +576,6 @@ function categorize_all_neurons(fit_results, deconvolved_activity, P_ranges, p, 
     return neuron_categorization, neuron_p, neuron_cats
 end
 
-"""
-Detects all neurons with encoding changes in all datasets across all time ranges.
-
-# Arguments
-- `fit_results`: Gen fit results.
-- `p`: Significant `p`-value.
-- `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
-- `threshold_artifact`: Motion artifact threshold for encoding change difference
-- `rngs`: Dictionary of which ranges to use per dataset
-- `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
-- `relative_encoding_strength`: Relative encoding strength of neurons.
-"""
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, relative_encoding_strength; beh_percent=25)
-    encoding_changes = Dict()
-    encoding_change_p_vals = Dict()
-    @showprogress for dataset in keys(fit_results)
-        n_neurons = fit_results[dataset]["num_neurons"]
-        n_ranges = length(rngs[dataset])
-        v = fit_results[dataset]["v"]
-        θh = fit_results[dataset]["θh"]
-        P = fit_results[dataset]["P"]
-        
-        encoding_changes[dataset] = Dict()
-        encoding_change_p_vals[dataset] = Dict()
-
-        for i1 = 1:n_ranges-1
-            t1 = rngs[dataset][i1]
-            range1 = fit_results[dataset]["ranges"][t1]
-            v_range_1 = compute_range(v[range1], beh_percent, 1)
-            θh_range_1 = compute_range(θh[range1], beh_percent, 2)
-            P_range_1 = compute_range(P[range1], beh_percent, 3)
-
-            for i2 = i1+1:n_ranges
-                t2 = rngs[dataset][i2]
-                range2 = fit_results[dataset]["ranges"][t2]
-                v_range_2 = compute_range(v[range2], beh_percent, 1)
-                θh_range_2 = compute_range(θh[range2], beh_percent, 2)
-                P_range_2 = compute_range(P[range2], beh_percent, 3)
-
-                v_rng = [max(v_range_1[1], v_range_2[1]), max(v_range_1[2], v_range_2[2]),
-                            min(v_range_1[3], v_range_2[3]), min(v_range_1[4], v_range_2[4])]
-                θh_rng = [max(θh_range_1[1], θh_range_2[1]), min(θh_range_1[2], θh_range_2[2])]
-                P_rng = [max(P_range_1[1], P_range_2[1]), min(P_range_1[2], P_range_2[2])]
-
-                # regions don't intersect 
-                if sort(v_rng) != v_rng
-                    @warn("velocity intervals don't overlap. Skipping...")
-                    continue
-                end
-                if  sort(θh_rng) != θh_rng
-                    @warn("head curvature intervals don't overlap. Using mean...")
-                    θh_rng = [mean(θh_rng), mean(θh_rng)]
-                end
-                if sort(P_rng) != P_rng
-                    P_rng = [mean(P_rng), mean(P_rng)]
-                end
-                
-                deconvolved_activities_1 = Dict()
-                deconvolved_activities_2 = Dict()
-                
-                for neuron = 1:n_neurons
-                    sampled_trace_params_1 = fit_results[dataset]["sampled_trace_params"][t1,neuron,:,:]
-                    sampled_trace_params_2 = fit_results[dataset]["sampled_trace_params"][t2,neuron,:,:]
-                    
-                    deconvolved_activities_1[neuron] = get_deconvolved_activity(sampled_trace_params_1, v_rng, θh_rng, P_rng)
-                    deconvolved_activities_2[neuron] = get_deconvolved_activity(sampled_trace_params_2, v_rng, θh_rng, P_rng)
-                end
-                
-                encoding_changes[dataset][(t1, t2)], encoding_change_p_vals[dataset][(t1, t2)] = categorize_neurons(deconvolved_activities_2,
-                        deconvolved_activities_1, p, θh_pos_is_ventral[dataset], fit_results[dataset]["trace_original"], threshold_artifact, 0, relative_encoding_strength[dataset][i1],
-                        ewma1=fit_results[dataset]["sampled_trace_params"][t2,:,:,7], ewma2=fit_results[dataset]["sampled_trace_params"][t1,:,:,7], compute_feeding=false)
-            end
-        end
-    end
-    return encoding_changes, encoding_change_p_vals
-end
-
-
-"""
-Corrects encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
-"""
-function correct_encoding_changes(analysis_dict)
-    encoding_changes_corrected = Dict()
-    @showprogress for dataset = keys(analysis_dict["encoding_changes"])
-        encoding_changes_corrected[dataset] = Dict()
-        for rngs = keys(analysis_dict["encoding_changes"][dataset])
-            encoding_changes_corrected[dataset][rngs] = Dict()
-            for cat = keys(analysis_dict["encoding_changes"][dataset][rngs])
-                if typeof(analysis_dict["encoding_changes"][dataset][rngs][cat]) <: Dict
-                    encoding_changes_corrected[dataset][rngs][cat] = Dict()
-                    
-                    for subcat = keys(analysis_dict["encoding_changes"][dataset][rngs][cat])
-                        encoding_changes_corrected[dataset][rngs][cat][subcat] = Int32[]
-                        for rng = 1:length(fit_results[dataset]["ranges"])                            
-                            for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat][subcat]
-                                # neurons must be encoding to be encoding-changing
-                                if !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] || neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
-                                    continue
-                                end
-                                if rng == 1
-                                    push!(encoding_changes_corrected[dataset][rngs][cat][subcat], neuron)
-                                end
-                            end
-                        end
-                    end
-                else
-                    encoding_changes_corrected[dataset][rngs][cat] = Int32[]
-                    for rng = 1:length(fit_results[dataset]["ranges"])
-                        for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat]
-                            # neurons must be encoding to be encoding-changing
-                            if !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] || neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
-                                continue
-                            end
-                            # EWMA-only encoding changes require encoding in both time segments
-                            if !(neuron in analysis_dict["encoding_changes"][dataset][rngs]["v"]["all"] || neuron in analysis_dict["encoding_changes"][dataset][rngs]["θh"]["all"] || neuron in analysis_dict["encoding_changes"][dataset][rngs]["P"]["all"]) && 
-                                     !(neuron in analysis_dict["neuron_categorization"][dataset][rngs[1]]["all"] && neuron in analysis_dict["neuron_categorization"][dataset][rngs[2]]["all"])
-                                continue
-                            end
-                            if rng == 1
-                                push!(encoding_changes_corrected[dataset][rngs][cat], neuron)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return encoding_changes_corrected
-end
-
 function subcategorize_all_neurons!(fit_results, analysis_dict, datasets)
     v_keys = ["fwd_slope_pos", "fwd_slope_neg", "rev_slope_pos", "rev_slope_neg", "rect_pos", "rect_neg"]
     θh_keys = ["fwd_ventral", "fwd_dorsal", "rev_ventral", "rev_dorsal", "rect_ventral", "rect_dorsal"]
@@ -854,7 +724,7 @@ function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categoriz
 end
 
 # TODO: deal with different ranges in different datasets
-function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
+function get_enc_stats(fit_results, neuron_p, P_ranges; encoding_changes=nothing, P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)
@@ -868,12 +738,12 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
         n_neuron = fit_results[dataset]["num_neurons"]
         n_b = 3 # number of behaviors
         enc_array = zeros(Int, n_neuron, n_b, length(rngs))
-        
+
         n_neurons_tot_all = 0
         n_neurons_fit_all = 0
         n_neurons_beh = [0,0,0]
         n_neurons_npred = [0,0,0,0]
-        
+
         P_ranges_valid = [r for r=rngs if P_ranges[dataset][r][2] - P_ranges[dataset][r][1] > P_diff_thresh]
         n_neurons_tot_all += n_neuron
         neurons_fit = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
@@ -884,6 +754,9 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             continue
         end
         for n=1:fit_results[dataset]["num_neurons"]
+            if !isnothing(encoding_changes) && !(n in encoding_changes[dataset][(1,2)]["neurons"])
+                continue
+            end
             max_npred = 0
 
             v_p = adjust([neuron_p[dataset][r]["v"]["all"][n] for r=rngs], BenjaminiHochberg())
@@ -908,29 +781,30 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.0
             if any(P_p .< p)
                 n_neurons_beh[3] += 1   
             end
-            
+
             for r=1:length(rngs)
                 enc = adjust([v_p[r], θh_p[r], P_p[r]], BenjaminiHochberg())
                 max_npred = max(max_npred, sum(enc .< p))
             end
             n_neurons_npred[max_npred+1] += 1
-            
+
             enc_array[n,1,:] .= v_p .< p
             enc_array[n,2,:] .= θh_p .< p
             enc_array[n,3,:] .= P_p .< p
         end
-        
+
         dict_["n_neurons_beh"] = n_neurons_beh
         dict_["n_neurons_npred"] = n_neurons_npred
         dict_["n_neurons_fit_all"] = n_neurons_fit_all
         dict_["n_neurons_tot_all"] = n_neurons_tot_all
         dict_["enc_array"] = enc_array
-        
+
         result[dataset] = dict_
     end
-    
+
     result, list_uid_invalid
 end
+
 
 function get_enc_stats_pool(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
     n_neurons_tot_all = 0
@@ -954,60 +828,6 @@ function get_enc_stats_pool(fit_results, neuron_p, P_ranges; P_diff_thresh=0.5, 
     n_neurons_beh, n_neurons_npred, n_neurons_fit_all, n_neurons_tot_all
 end
 
-function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rngs_valid=nothing, p=0.05)
-    n_neurons_tot = 0
-    n_neurons_enc = 0
-    n_neurons_nenc_enc_change = 0
-    n_neurons_enc_change_all = 0
-    n_neurons_enc_change_beh = [0,0,0]
-    dict_enc_change = Dict()
-    dict_enc = Dict()
-    for dataset in datasets
-        if rngs_valid == nothing
-            rngs_valid = 1:length(fit_results[dataset]["ranges"])
-        end
-        rngs = [r for r in keys(enc_change_p[dataset]) if (r[1] in rngs_valid && r[2] in rngs_valid)]
-        if length(rngs) == 0
-            @warn("Dataset $(dataset) has no time ranges where pumping could be compared")
-            continue
-        end
-        dict_enc_change[dataset] = Dict()
-        dict_enc[dataset] = Dict()
-        
-        neurons_ec = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([enc_change_p[dataset][i]["all"][n] for i=rngs], BenjaminiHochberg()) .< p) > 0]
-        
-        rngs_enc = [r[1] for r in rngs]
-        append!(rngs_enc, [r[2] for r in rngs])
-        rngs_enc = unique(rngs_enc)
-        neurons_encode = [n for n in 1:fit_results[dataset]["num_neurons"] if sum(adjust([neuron_p[dataset][i]["all"][n] for i=rngs_enc], BenjaminiHochberg()) .< p) > 0]
-
-        n_neurons_enc += length(neurons_encode)        
-        n_neurons_enc_change_all += length(neurons_ec)
-        n_neurons_nenc_enc_change += length([n for n in neurons_ec if !(n in neurons_encode)])
-        dict_enc_change[dataset] = [n for n in neurons_ec if n in neurons_encode]
-        dict_enc[dataset] = neurons_encode
-        
-        n_neurons_tot += fit_results[dataset]["num_neurons"]
-
-        for n=1:fit_results[dataset]["num_neurons"]
-            v_p = adjust([enc_change_p[dataset][r]["v"]["all"][n] for r=rngs], BenjaminiHochberg())
-            θh_p = adjust([enc_change_p[dataset][r]["θh"]["all"][n] for r=rngs], BenjaminiHochberg())
-            P_p = adjust([enc_change_p[dataset][r]["P"]["all"][n] for r=rngs], BenjaminiHochberg())
-            if any(v_p .< p)
-                n_neurons_enc_change_beh[1] += 1
-            end
-            
-            if any(θh_p .< p)
-                n_neurons_enc_change_beh[2] += 1
-            end
-            
-            if any(P_p .< p)
-                n_neurons_enc_change_beh[3] += 1
-            end
-        end
-    end
-    return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc, n_neurons_nenc_enc_change, n_neurons_enc_change_beh, dict_enc_change, dict_enc
-end
         
 function get_consistent_neurons(datasets, fit_results, neuron_categorization, dict_enc, rngs_use; rngs_valid=[5,6], ewma_skip=200, err_thresh=0.9)
     consistent_neurons = Dict()
@@ -1061,37 +881,3 @@ function get_consistent_neurons(datasets, fit_results, neuron_categorization, di
     return consistent_neurons, inconsistent_neurons, parameters, fits
 end
 
-""" Computes summary statistics.
-`function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)`
-
-`return n_neurons_tot, n_neurons_enc, n_neurons_enc_change, n_neurons_consistent, n_neurons_fully_static,
-n_neurons_quasi_static, n_neurons_dynamic, n_neurons_indeterminable`
-"""
-function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)
-    n_neurons_tot = 0
-    n_neurons_enc = 0
-    n_neurons_enc_change = 0
-    n_neurons_consistent = 0
-    n_neurons_fully_static = 0
-    n_neurons_quasi_static = 0
-    n_neurons_dynamic = 0
-    n_neurons_indeterminable = 0
-    for dataset in datasets
-        n_neurons_tot += enc_stat_dict[dataset]["n_neurons_tot_all"]
-        n_neurons_enc += enc_stat_dict[dataset]["n_neurons_fit_all"]
-        @assert(length(dict_enc[dataset]) == enc_stat_dict[dataset]["n_neurons_fit_all"],
-                "Number of encoding neurons must equal length of encoding neurons.")
-        for n in dict_enc[dataset]
-            consistent = (n in consistent_neurons[dataset])
-            enc_change = (n in dict_enc_change[dataset])
-            n_neurons_consistent += consistent
-            n_neurons_enc_change += enc_change
-            n_neurons_fully_static += (consistent && ~enc_change)
-            n_neurons_quasi_static += (consistent && enc_change)
-            n_neurons_dynamic += (~consistent && enc_change)
-            n_neurons_indeterminable += (~consistent && ~enc_change)
-        end
-    end
-    return n_neurons_tot, n_neurons_enc, n_neurons_enc_change, n_neurons_consistent, n_neurons_fully_static,
-            n_neurons_quasi_static, n_neurons_dynamic, n_neurons_indeterminable
-end

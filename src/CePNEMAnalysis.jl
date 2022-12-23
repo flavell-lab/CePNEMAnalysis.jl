@@ -5,6 +5,7 @@ using EncoderModel
 using EncoderModelGen
 using HDF5
 using Gen
+using JSON
 using Statistics
 using StatsBase
 using ProgressMeter

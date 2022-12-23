@@ -753,7 +753,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; encoding_changes=nothing
             continue
         end
         for n=1:fit_results[dataset]["num_neurons"]
-            if !isnothing(encoding_changes) && !(n in encoding_changes[dataset][(1,2)]["neurons"])
+            if !isnothing(encoding_changes) && (!(n in keys(encoding_changes)) || !(n in encoding_changes[dataset][(1,2)]["neurons"]))
                 continue
             end
             max_npred = 0

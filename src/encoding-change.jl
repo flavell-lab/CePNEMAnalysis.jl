@@ -80,8 +80,12 @@ end
 
 """
 Corrects encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
+
+# Arguments:
+- `fit_results::Dict`: Dictionary containing CePNEM fit results.
+- `analysis_dict::Dict`: Dictionary containing CePNEM analysis results.
 """
-function correct_encoding_changes(analysis_dict)
+function correct_encoding_changes(fit_results::Dict, analysis_dict::Dict)
     encoding_changes_corrected = Dict()
     @showprogress for dataset = keys(analysis_dict["encoding_changes"])
         encoding_changes_corrected[dataset] = Dict()

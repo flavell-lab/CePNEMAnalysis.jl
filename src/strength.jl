@@ -2,14 +2,14 @@
 Computes the relative encoding strength of the three behaviors, together with standard deviations of full and deconvolved model fits.
 
 # Arguments
-- `fit_results::Dict{String,Any}`: Gen fit results.
+- `fit_results::Dict`: Gen fit results.
 - `dataset::String`: Dataset to use
 - `rng::Int`: Range in that dataset to use
 - `neuron::Int`: Neuron to use
 - `max_idx::Int` (optional, default `10001`): Maximum Gen posterior sample index.
 - `dataset_mapping` (optional, default `nothing`): Dictionary mapping to use different behavioral dataset.
 """
-function get_relative_encoding_strength_mt(fit_results::Dict{String,Any}, dataset::String, rng::Int, neuron::Int; max_idx::Int=10001, dataset_mapping=nothing)
+function get_relative_encoding_strength_mt(fit_results::Dict, dataset::String, rng::Int, neuron::Int; max_idx::Int=10001, dataset_mapping=nothing)
     dataset_fit = fit_results[dataset]
     ps_fit = deepcopy(dataset_fit["sampled_trace_params"])
     rng_t = dataset_fit["ranges"][rng]
@@ -100,10 +100,10 @@ end
 Computes the relative encoding strength of all neurons in all datasets.
 
 # Arguments
-- `fit_results::Dict{String,Any}`: Dictionary of Gen fit results.
+- `fit_results::Dict`: Dictionary of Gen fit results.
 - `datasets::Vector{String}`: List of datasets to compute relative encoding strength for.
 """
-function get_relative_encoding_strength(fit_results::Dict{String,Any}, datasets::Vector{String})
+function get_relative_encoding_strength(fit_results::Dict, datasets::Vector{String})
     relative_encoding_strength = Dict()
     @showprogress for dataset = datasets
         relative_encoding_strength[dataset] = Dict()
@@ -135,12 +135,12 @@ Computes the median encoding change and encoding strength for each neuron in eac
 Additionally, combines data from all encoding neurons in each dataset category.
 
 # Arguments
-- `fit_results::Dict{String,Any}`: Dictionary of Gen fit results.
-- `analysis_dict::Dict{String,Any}`: Dictionary of analysis results, including neuron categorization and encoding changes
+- `fit_results::Dict`: Dictionary of Gen fit results.
+- `analysis_dict::Dict`: Dictionary of analysis results, including neuron categorization and encoding changes
 - `dataset_cats::Dict{String,Vector{String}}`: Dictionary of dataset categories to combine.
 - `exclude_pumping::Bool` (optional, default `true`): Whether to exclude pumping encoding from analysis
 """
-function compute_encoding_change_strength(fit_results::Dict{String,Any}, analysis_dict::Dict{String,Any}, dataset_cats::Dict{String,Vector{String}}, exclude_pumping::Bool=true)
+function compute_encoding_change_strength(fit_results::Dict, analysis_dict::Dict, dataset_cats::Dict{String,Vector{String}}, exclude_pumping::Bool=true)
     enc_change_strength = Dict()
     enc_strength_dict = Dict()
 

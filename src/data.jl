@@ -149,7 +149,7 @@ function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_clas
                 end
             end
         end
-        for (_, match_neuron, _) = list_class
+        for match_neuron= list_class
             if !(match_neuron in keys(match_class_roi))
                 continue
             end

@@ -173,3 +173,167 @@ function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_clas
     end
     return matches, matches_ec
 end
+
+"""
+Exports CePNEM analysis results to JSON file for use on the website.
+
+# Arguments:
+- `fit_results::Dict`: Dictionary of CePNEM fit results.
+- `analysis_dict::Dict`: Dictionary of CePNEM analysis results.
+- `datasets::Vector{String}`: List of datasets to export.
+- `path_output::String`: Name of JSON file to export to.
+- `path_h5::String`: Path to HDF5 directory containing raw data.
+"""
+function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector{String}, path_output::String, path_h5::String)
+    dict_summary = OrderedDict()    
+    @showprogress for dataset = datasets
+        if !(dataset in keys(analysis_dict["neuron_categorization"]))
+            continue
+        end
+        
+        is_ventral = θh_pos_is_ventral[dataset] ? -1 : 1
+        
+        dict_dataset = Dict()
+        dict_summary[dataset] = Dict()
+        dict_dataset["neuron_categorization"] = analysis_dict["neuron_categorization"][dataset]
+        dict_dataset["trace_array"] = transpose(fit_results[dataset]["trace_array"])
+        dict_dataset["avg_timestep"] = fit_results[dataset]["avg_timestep"] / 60
+
+        dict_dataset["tau_vals"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["forwardness"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["dorsalness"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["feedingness"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["rel_enc_str_v"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["rel_enc_str_θh"] = zeros(fit_results[dataset]["num_neurons"])
+        dict_dataset["rel_enc_str_P"] = zeros(fit_results[dataset]["num_neurons"])
+        for neuron = 1:fit_results[dataset]["num_neurons"]
+            ranges_encoding = []
+            ranges_encoding_v = []
+            ranges_encoding_θh = []
+            ranges_encoding_P = []
+            for rng=1:length(fit_results[dataset]["ranges"])
+                if neuron in analysis_dict["neuron_categorization"][dataset][rng]["all"]
+                    push!(ranges_encoding, rng)
+                end
+                if neuron in analysis_dict["neuron_categorization"][dataset][rng]["v"]["fwd"] || neuron in analysis_dict["neuron_categorization"][dataset][rng]["v"]["rev"] 
+                    push!(ranges_encoding_v, rng)
+                end
+                if neuron in analysis_dict["neuron_categorization"][dataset][rng]["θh"]["dorsal"] || neuron in analysis_dict["neuron_categorization"][dataset][rng]["θh"]["ventral"] 
+                    push!(ranges_encoding_θh, rng)
+                end
+                if neuron in analysis_dict["neuron_categorization"][dataset][rng]["P"]["act"] || neuron in analysis_dict["neuron_categorization"][dataset][rng]["P"]["inh"] 
+                    push!(ranges_encoding_P, rng)
+                end
+            end
+            if length(ranges_encoding) > 0
+                dict_dataset["tau_vals"][neuron] = median(fit_results[dataset]["sampled_tau_vals"][ranges_encoding, neuron, :])
+                dict_dataset["rel_enc_str_v"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["v"] for rng=ranges_encoding]...))
+                dict_dataset["rel_enc_str_θh"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["θh"] for rng=ranges_encoding]...))
+                dict_dataset["rel_enc_str_P"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["P"] for rng=ranges_encoding]...))                
+            end
+            if length(ranges_encoding_v) > 0
+                dict_dataset["forwardness"][neuron] = median([get_forwardness(analysis_dict["tuning_strength"][dataset][rng][neuron]) for rng=ranges_encoding_v])
+            end
+            if length(ranges_encoding_θh) > 0
+                dict_dataset["dorsalness"][neuron] = median([get_dorsalness(analysis_dict["tuning_strength"][dataset][rng][neuron]) for rng=ranges_encoding_θh])
+            end
+            if length(ranges_encoding_P) > 0
+                dict_dataset["feedingness"][neuron] = median([analysis_dict["tuning_strength"][dataset][rng][neuron]["P_pos"] for rng=ranges_encoding_P])
+            end
+        end
+
+        dict_dataset["ranges"] = fit_results[dataset]["ranges"]
+
+        if length(dict_dataset["ranges"]) > 1
+            dict_dataset["encoding_changing_neurons"] = analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][(1,2)]["neurons"]
+        else
+            dict_dataset["encoding_changing_neurons"] = []
+        end
+
+        dict_summary[dataset]["num_encoding_changes"] = length(dict_dataset["encoding_changing_neurons"])
+        dict_dataset["velocity"] = fit_results[dataset]["v"]
+        dict_dataset["head_curvature"] = fit_results[dataset]["θh"] * is_ventral    
+        dict_dataset["pumping"] = fit_results[dataset]["P"]        
+        dict_dataset["angular_velocity"] = fit_results[dataset]["ang_vel"] * is_ventral  
+        dict_dataset["body_curvature"] = fit_results[dataset]["curve"]
+        dict_summary[dataset]["num_neurons"] = fit_results[dataset]["num_neurons"]
+        dict_dataset["num_neurons"] = fit_results[dataset]["num_neurons"]
+        dict_summary[dataset]["max_t"] = fit_results[dataset]["ranges"][end][end]
+        dict_dataset["max_t"] = fit_results[dataset]["ranges"][end][end]
+        dict_summary[dataset]["dataset_type"] = nothing
+        if dataset in datasets_stim_all
+            dict_summary[dataset]["dataset_type"] = ["heat"]
+        elseif dataset in datasets_gfp
+            dict_summary[dataset]["dataset_type"] = ["gfp"]
+        elseif dataset in datasets_baseline
+            dict_summary[dataset]["dataset_type"] = ["baseline"]
+        elseif dataset in datasets_neuropal
+            dict_summary[dataset]["dataset_type"] = ["baseline", "neuropal"]
+        end
+
+        dict_dataset["dataset_type"] = dict_summary[dataset]["dataset_type"]
+
+        if dataset in datasets_neuropal
+            idx_uid = findall(x->x==dataset, list_uid)[1]
+            dict_summary[dataset]["num_labeled"] = length(list_match_dict[idx_uid][1])
+            dict_dataset["labeled"] = list_match_dict[idx_uid][1]
+        else
+            dict_summary[dataset]["num_labeled"] = 0
+            dict_dataset["labeled"] = Dict()
+        end
+        
+        path_data_ = joinpath(path_h5_data, "$(dataset)-data.h5")
+        data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events"])
+        dict_dataset["reversal_events"] = data_dict["behavior/reversal_events"]'
+        if haskey(data_dict, "stim_begin_confocal")
+            stim = Int(data_dict["stim_begin_confocal"][1])
+            dict_dataset["events"] = Dict("heat"=>[stim])
+        end
+        
+        dict_dataset["uid"] = dataset
+        
+        open(joinpath(path_output, "$(dataset).json"), "w") do f
+            write(f, JSON.json(dict_dataset))
+        end
+        
+        ####
+            open(joinpath(path_output, "summary.json"), "w") do f
+            write(f, JSON.json(dict_summary))
+        end
+        
+        ordered_matches = OrderedDict()
+        
+        for neuron = sort(collect(keys(analysis_dict["matches"])))
+            ordered_matches[neuron] = analysis_dict["matches"][neuron]
+        end
+        
+        open(joinpath(path_output, "matches.json"), "w") do f
+            write(f, JSON.json(ordered_matches))
+        end
+        
+        f = h5open(path_h5_enc)
+        
+        dict_enc_table = Dict()
+        
+        dict_enc_table["encoding_table"] = transpose(f["encoding_table"][:,:])
+        for k = ["class", "count", "enc_v", "enc_strength_v", "enc_hc",
+                "enc_strength_hc", "enc_pumping", "enc_strength_pumping", "tau"]
+            try
+                dict_enc_table[k] = f[k][:,1]
+            catch e
+                dict_enc_table[k] = f[k][:]
+            end
+        end
+        
+        dict_enc_table["encoding_change_abundance"] = 
+            [(n in keys(analysis_dict["encoding_change_abundance"]) ? analysis_dict["encoding_change_abundance"][n] : 0)
+            for n in dict_enc_table["class"]]
+        
+        open(joinpath(path_output, "encoding_table.json"), "w") do g
+            write(g, JSON.json(dict_enc_table))
+        end
+        
+        close(f)
+    end
+end
+

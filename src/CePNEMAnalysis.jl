@@ -8,6 +8,7 @@ using Gen
 using Statistics
 using StatsBase
 using ProgressMeter
+using PyPlot
 using Plots
 using Plots.PlotMeasures
 using TSne

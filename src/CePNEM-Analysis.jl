@@ -1,4 +1,4 @@
-module GenAnalysis
+module CePNEM-Analysis
 
 using FlavellBase
 using EncoderModel
@@ -16,7 +16,8 @@ using ColorSchemes
 using MultipleTesting
 using MultivariateStats
 using AnalysisBase
-using FlavellConstants, ANTSUNData
+using FlavellConstants
+using ANTSUNData
 
 include("data.jl")
 include("dist.jl")

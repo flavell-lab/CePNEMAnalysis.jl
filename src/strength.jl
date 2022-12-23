@@ -10,7 +10,6 @@ Computes the relative encoding strength of the three behaviors, together with st
 - `dataset_mapping` (optional, default `nothing`): Dictionary mapping to use different behavioral dataset.
 """
 function get_relative_encoding_strength_mt(fit_results::Dict{String,Any}, dataset::String, rng::Int, neuron::Int; max_idx::Int=10001, dataset_mapping=nothing)
-    , dataset, rng, neuron; max_idx=10001, dataset_mapping=nothing)
     dataset_fit = fit_results[dataset]
     ps_fit = deepcopy(dataset_fit["sampled_trace_params"])
     rng_t = dataset_fit["ranges"][rng]

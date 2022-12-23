@@ -1,4 +1,4 @@
-module CePNEM-Analysis
+module CePNEMAnalysis
 
 using FlavellBase
 using EncoderModel

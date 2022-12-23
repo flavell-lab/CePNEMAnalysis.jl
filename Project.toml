@@ -1,4 +1,4 @@
-name = "CePNEM-Analysis"
+name = "CePNEMAnalysis"
 uuid = "6e2f18b1-61de-4cf1-b8ce-3b1fbfe2ed91"
 authors = ["goldenratio1618 <adamatanas@gmail.com>"]
 version = "0.4.0"

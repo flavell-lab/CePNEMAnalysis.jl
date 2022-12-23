@@ -30,8 +30,8 @@ function generate_reg_L2_nl10d(list_idx_ps::Union{Vector{Int}, UnitRange{Int64}}
 end
 
 
-function fit_model(trace, xs, xs_s; f_init_ps, f_generate_model, f_generate_reg,
-        idx_splits, idx_train, idx_tests, ewma_trim, λ_reg, max_eval=5000; opt_g=:G_MLSL_LDS, opt_l=:LD_LBFGS)
+function fit_model(trace, xs, xs_s, f_init_ps, f_generate_model, f_generate_reg,
+        idx_splits, idx_train, idx_tests, ewma_trim, λ_reg; opt_g=:G_MLSL_LDS, opt_l=:LD_LBFGS, max_eval=5000)
     # get thresholds
     list_θ = zeros(eltype(xs), 5)
 
@@ -119,11 +119,11 @@ function fit_mse_models(fit_results, analysis_dict, datasets, get_h5_data; ewma_
     
                     idx_tests = [idx_splitify_rng(rng, idx_splits, ewma_trim) for rng in fit_results[data_uid]["ranges"]]
     
-                    res = fit_model(trace, xs, xs_s; f_init_ps=f_init_ps,
-                            f_generate_model=f_generate_model,
-                            f_generate_reg=f_generate_reg,
-                            idx_splits=idx_splits, idx_train=idx_train, idx_tests=idx_tests,
-                            ewma_trim=ewma_trim, λ_reg=λ_reg, max_eval=5000)
+                    res = fit_model(trace, xs, xs_s, f_init_ps,
+                            f_generate_model,
+                            f_generate_reg,
+                            idx_splits, idx_train, idx_tests,
+                            ewma_trim, λ_reg, max_eval=5000)
                     (cost_train, cost_tests, u_opt, n_eval) = res
     
                     mse_fits_combinedtrain[data_uid][(rng1,rng2)][idx_neuron]["cost_train"] = cost_train

@@ -723,7 +723,6 @@ function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categoriz
     return encoding, relative_enc_str, τ
 end
 
-# TODO: deal with different ranges in different datasets
 function get_enc_stats(fit_results, neuron_p, P_ranges; encoding_changes=nothing, P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
@@ -881,3 +880,41 @@ function get_consistent_neurons(datasets, fit_results, neuron_categorization, di
     return consistent_neurons, inconsistent_neurons, parameters, fits
 end
 
+function add_weighted_subencoding_matrix!(fit_results, analysis_dict, datasets; use_relative=true)
+    analysis_dict["weighted_v_enc_matrix_baseline"] = zeros(3,3)
+    analysis_dict["weighted_θh_enc_matrix_baseline"] = zeros(3,3)
+    analysis_dict["weighted_P_enc_matrix_baseline"] = zeros(3,3)
+    for dataset in datasets
+        for rng=1:length(fit_results[dataset]["ranges"])
+            for beh = ["v", "θh", "P"]
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_pos_rev_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_pos_rect_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][3,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_neg_rect_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][3,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_pos_rect_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,3] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_neg_rect_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,3] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+            end
+        end
+    end
+end

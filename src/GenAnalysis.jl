@@ -1,6 +1,7 @@
 module GenAnalysis
 
 using FlavellBase
+using EncoderModel
 using EncoderModelGen
 using HDF5
 using Gen
@@ -10,6 +11,7 @@ using ProgressMeter
 using Plots
 using Plots.PlotMeasures
 using TSne
+using UMAP
 using ColorSchemes
 using MultipleTesting
 using MultivariateStats
@@ -20,9 +22,10 @@ include("data.jl")
 include("dist.jl")
 include("encoding-categorization.jl")
 include("encoding-change.jl")
+include("mse.jl")
 include("decode.jl")
 include("plot.jl")
-include("tsne.jl")
+include("umap.jl")
 include("cluster.jl")
 include("pca.jl")
 include("strength.jl")
@@ -30,8 +33,11 @@ include("tuning.jl")
 
 export
     # data.jl
-    load_gen_output,
+    load_CePNEM_output,
     get_pumping_ranges,
+    add_to_analysis_dict!,
+    compute_signal,
+    neuropal_data_to_dict,
     # dist.jl
     update_cmap!,
     evaluate_pdf_xgiveny!,
@@ -54,7 +60,7 @@ export
     get_enc_stats,
     get_enc_stats_pool,
     get_consistent_neurons,
-    encoding_summary_stats,
+    add_weighted_subencoding_matrix!,
     # encoding-change.jl
     detect_encoding_changes,
     correct_encoding_changes,
@@ -64,18 +70,31 @@ export
     get_enc_change_cat_p_vals,
     get_enc_change_cat_p_vals_dataset,
     get_enc_change_category,
-    # tsne.jl
+    MSE_correct_encoding_changes,
+    # mse.jl
+    idx_splitify_rng,
+    generate_reg_L2_nl10d,
+    fit_model,
+    fit_mse_models,
+    compute_CePNEM_MSE,
+    # umap.jl
     make_distance_matrix,
+    find_subset_idx,
     compute_tsne,
+    extrapolate_behaviors,
+    compute_median_CePNEM_fits,
+    append_median_CePNEM_fits,
+    project_CePNEM_to_UMAP,
+    compute_umap_subcategories!,
     # plot.jl
     CET_L13,
     make_deconvolved_heatmap,
+    make_umap_rgb,
     plot_deconvolved_heatmap,
     plot_deconvolved_neural_activity!,
     plot_tsne,
     plot_tau_histogram,
     plot_neuron,
-    make_umap_rgb,
     plot_posterior_heatmap!,
     plot_posterior_rgb,
     plot_arrow!,
@@ -90,6 +109,8 @@ export
     dendrocolor,
     # strength.jl
     get_relative_encoding_strength_mt,
+    get_relative_encoding_strength,
+    compute_encoding_change_strength,
     # tuning.jl
     get_forwardness,
     get_dorsalness,

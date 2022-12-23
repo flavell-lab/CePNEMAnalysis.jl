@@ -563,61 +563,6 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
 end
 
 """
-Plots histogram of tau (half-decay) times for all encoding neurons.
-
-# Arguments:
-- `fit_results`: Gen fit results
-- `neuron_categorization`: Categorization of each neuron
-- `t_max` (optional, default 60): Maximum time point to plot
-- `use_cdf` (optional, default true): Whether to use CDF format instead of PDF
-- `percent` (optional, default 95): If using CDF format, credible range to show
-- `rngs_valid` (optional): If set to a list of ranges, only attempt to use those ranges for computation.
-"""
-function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, percent=95, rngs_valid=nothing)
-    s_vals = []
-    s_vals_min = []
-    s_vals_max = []
-    delta = (100-percent)/2
-    for dataset in keys(fit_results)
-        if isnothing(rngs_valid)
-            rngs_valid_use = 1:length(fit_results[dataset]["ranges"])
-        else
-            rngs_valid_use = rngs_valid
-        end
-        for n in 1:fit_results[dataset]["num_neurons"]
-            rngs_usable = [rng for rng in rngs_valid_use if n in neuron_categorization[dataset][rng]["all"]]
-            if length(rngs_usable) == 0
-                continue
-            end
-            sv_min = []
-            sv = []
-            sv_max = []
-            for rng in rngs_usable
-                append!(sv_min, percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], delta))
-                append!(sv, median(fit_results[dataset]["sampled_tau_vals"][rng,n,:]))
-                append!(sv_max, percentile(fit_results[dataset]["sampled_tau_vals"][rng,n,:], 100-delta))
-            end
-            push!(s_vals_min, median(sv_min))
-            push!(s_vals, median(sv))
-            push!(s_vals_max, median(sv_max))
-        end
-    end
-    if use_cdf
-        r = 0:0.1:t_max
-        mn = [sum(s_vals_min .< i) ./ length(s_vals) for i=r]
-        m = [sum(s_vals .< i) ./ length(s_vals) for i=r]
-        mx = [sum(s_vals_max .< i) ./ length(s_vals) for i=r]
-        
-        Plots.plot(r, m, ribbon=(m.-mn, mx.-m), label=nothing, ylim=(0,1))
-        ylabel!("cumulative fraction of encoding neurons")
-    else
-        Plots.histogram(s_vals, normalize=true, bins=0:1:t_max, label=nothing, color="gray")
-    end
-    xlabel!("half decay (s)")
-    ylabel!("fraction of encoding neurons")
-end 
-
-"""
 Plots tau (half-decay) histogram of a single behavior.
 
 # Arguments:

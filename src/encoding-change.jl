@@ -10,11 +10,12 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `rngs`: Dictionary of which ranges to use per dataset
 - `beh_percent` (optional, default `25`): Location to compute behavior percentiles. 
 - `relative_encoding_strength`: Relative encoding strength of neurons.
+- `datasets`: Datasets to compute encoding changes for.
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, relative_encoding_strength; beh_percent=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, relative_encoding_strength, datasets; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
-    @showprogress for dataset in keys(fit_results)
+    @showprogress for dataset in datasets
         n_neurons = fit_results[dataset]["num_neurons"]
         n_ranges = length(rngs[dataset])
         v = fit_results[dataset]["v"]
@@ -290,75 +291,36 @@ function get_enc_change_category(dataset, rngs, neuron, encoding_changes)
     return encoding_change
 end
 
-function fit_mse_models!(fit_results, analysis_dict; delete_old=true)
-    @showprogress for data_uid = datasets
-        if delete_old || !(data_uid in keys(analysis_dict["mse_fits_combinedtrain"]))
-            analysis_dict["mse_fits_combinedtrain"][data_uid] = Dict()
-        end
-        
-        path_data = "/data1/prj_kfc/data/processed_h5/$(data_uid)-data.h5"
-        data_dict = import_data(path_data)
-        P_thresh = 0
-    
-        n_neuron = data_dict["n_neuron"]
-        idx_splits = data_dict["idx_splits"]
-        idx_splits_trim = trim_idx_splits(idx_splits, (50,0))
-        
-        # set up behavior
-        n_t = maximum(idx_splits[end])
-        xs = zeros(5, n_t)
-        xs[1,:] = data_dict["velocity"]
-        xs[2,:] = data_dict["θh"]
-        xs[3,:] = data_dict["pumping"]
-        xs[4,:] = data_dict["ang_vel"]
-        xs[5,:] = data_dict["curve"]
-        
-        xs_s = deepcopy(xs)
-        xs_s[1,:] .= xs_s[1,:] ./ v_STD
-        xs_s[2,:] .= xs_s[2,:] ./ θh_STD
-        xs_s[3,:] .= xs_s[3,:] ./ P_STD
-        # 
-        
-        ewma_trim = 50
-        λ_reg = 0
-        
-        for rng1=1:length(fit_results[data_uid]["ranges"])
-            for rng2=rng1+1:length(fit_results[data_uid]["ranges"])
-                rngs = collect(deepcopy(fit_results[data_uid]["ranges"][rng1]))
-                append!(rngs, fit_results[data_uid]["ranges"][rng2])
-                idx_train = idx_splitify_rng(rngs, idx_splits, ewma_trim)
-    
-                if delete_old || !((rng1, rng2) in keys(analysis_dict["mse_fits_combinedtrain"][data_uid]))
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)] = Dict()
-                end
-                for idx_neuron = analysis_dict["encoding_changes_corrected"][data_uid][(rng1,rng2)]["all"]
-                    if !delete_old && idx_neuron in keys(analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)])
-                        continue
-                    end
-                    trace_array = data_dict["trace_array"]
-                    trace = trace_array[idx_neuron,:]
-    
-                    f_generate_model = generate_model_nl10d
-                    f_init_ps = init_ps_model_nl10d
-                    f_generate_reg = generate_reg_L2_nl10d
-    
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)][idx_neuron] = Dict()
-    
-                    idx_tests = [idx_splitify_rng(rng, idx_splits, ewma_trim) for rng in fit_results[data_uid]["ranges"]]
-    
-                    res = fit_model(trace, xs, xs_s; f_init_ps=f_init_ps,
-                            f_generate_model=f_generate_model,
-                            f_generate_reg=f_generate_reg,
-                            idx_splits=idx_splits, idx_train=idx_train, idx_tests=idx_tests,
-                            ewma_trim=ewma_trim, λ_reg=λ_reg, max_eval=5000)
-                    (cost_train, cost_tests, u_opt, n_eval) = res
-    
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)][idx_neuron]["cost_train"] = cost_train
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)][idx_neuron]["cost_test"] = cost_tests
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)][idx_neuron]["u_opt"] = u_opt
-                    analysis_dict["mse_fits_combinedtrain"][data_uid][(rng1,rng2)][idx_neuron]["n_eval"] = n_eval
+function MSE_correct_encoding_changes(analysis_dict, datasets)
+    encoding_changing_neurons_msecorrect = Dict()
+    encoding_changing_neurons_msecorrect_mh = Dict()
+    for dataset = datasets
+        encoding_changing_neurons_msecorrect[dataset] = Dict()
+        encoding_changing_neurons_msecorrect_mh[dataset] = Dict()
+        for rngs in keys(analysis_dict["encoding_changes_corrected"][dataset])
+            encoding_changing_neurons_msecorrect[dataset][rngs] = Dict()
+            encoding_changing_neurons_msecorrect_mh[dataset][rngs] = Dict()
+            encoding_changing_neurons_msecorrect_mh[dataset][rngs]["p_vals"] = Dict()
+            encoding_changing_neurons_msecorrect_mh[dataset][rngs]["neurons"] = Int32[]
+            
+            p_vals = Float64[]
+            for neuron in analysis_dict["encoding_changes_corrected"][dataset][rngs]["all"]
+                combined_better = [prob_P_greater_Q(analysis_dict["mse_ewma_skip"][dataset][neuron][rngs[i],rngs[i],:],
+                        [analysis_dict["mse_fits_combinedtrain"][dataset][rngs][neuron]["cost_test"][rngs[i]]]) for i=1:2]
+                encoding_changing_neurons_msecorrect[dataset][rngs][neuron] = combined_better
+                push!(p_vals, min(1,minimum(combined_better) * length(combined_better)))
+            end
+            if length(p_vals) == 0
+                continue
+            end
+            p_vals = adjust(p_vals, BenjaminiHochberg())
+            for (i,neuron) in enumerate(analysis_dict["encoding_changes_corrected"][dataset][rngs]["all"])
+                encoding_changing_neurons_msecorrect_mh[dataset][rngs]["p_vals"][neuron] = p_vals[i]
+                if p_vals[i] < 0.05
+                    push!(encoding_changing_neurons_msecorrect_mh[dataset][rngs]["neurons"], neuron)
                 end
             end
         end
     end
+    return encoding_changing_neurons_msecorrect, encoding_changing_neurons_msecorrect_mh
 end

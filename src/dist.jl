@@ -194,7 +194,15 @@ function compute_AND(p1, p2)
     return 1 - (1-p1)*(1-p2)
 end
 
-function project_posterior(sampled_trace_params, params_rm; percentile_thresh=1)
+"""
+Projects the posterior distribution into a subspace missing some parameters.
+
+# Arguments:
+- `sampled_trace_params::Array`: Samples from the posterior distribution
+- `params_rm::Array{Int}`: Indices of parameters to remove
+- `percentile_thresh::Real` (optional, default 1): Percentile of posterior samples to keep
+"""
+function project_posterior(sampled_trace_params::Array, params_rm::Array{Int}; percentile_thresh::Real=1)
     if length(params_rm) == 0
         return median(sampled_trace_params, dims=1)[1,:]
     end

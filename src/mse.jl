@@ -59,8 +59,6 @@ function fit_model(trace, xs, xs_s, f_init_ps, f_generate_model, f_generate_reg,
     ps_0, ps_min, ps_max, list_idx_ps, list_idx_ps_reg = f_init_ps(xs)
     y_test_pred = f_generate_model(xs_s, list_θ, ewma_trim, [1:size(xs_s,2)])(u_opt)
     for idx_test in idx_tests
-        println(trace[idx_test])
-        println(y_test_pred[idx_test])
         push!(cost_tests, cost_mse(trace[idx_test], y_test_pred[idx_test]))
     end
 

@@ -151,7 +151,7 @@ function compute_CePNEM_MSE(fit_results, analysis_dict, datasets, get_h5_data; e
         neurons_ec = Int32[]
 
         for rng1 in 1:length(fit_results[dataset]["ranges"])-1
-            for rng2 in rng1_+1:length(fit_results[dataset]["ranges"])
+            for rng2 in rng1+1:length(fit_results[dataset]["ranges"])
                 neurons_ec = union(neurons_ec, analysis_dict["encoding_changes_corrected"][dataset][(rng1,rng2)]["all"])
             end
         end

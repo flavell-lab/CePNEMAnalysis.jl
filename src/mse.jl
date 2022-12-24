@@ -150,26 +150,24 @@ function compute_CePNEM_MSE(fit_results, analysis_dict, datasets, get_h5_data; e
 
         neurons_ec = Int32[]
 
-        for rng1 in 1:length(fit_results[dataset]["ranges"])
+        for rng1 in 1:length(fit_results[dataset]["ranges"])-1
             for rng2 in rng1_+1:length(fit_results[dataset]["ranges"])
                 neurons_ec = union(neurons_ec, analysis_dict["encoding_changes_corrected"][dataset][(rng1,rng2)]["all"])
             end
         end
         
-        for rng1=1:length(fit_results[dataset]["ranges"])-1
-            model = nothing
-            for rng2=1:length(fit_results[dataset]["ranges"])
-                for neuron in neurons_ec
-                    mse_ewma_skip[dataset][neuron] = zeros(length(rngs),length(rngs),n_samples)
-                    for idx=1:size(fit_results[dataset]["sampled_trace_params"],3)
-                        ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng1,neuron,idx,1:8])
-                        if reset_param_6
-                            ps[6] = 0
-                        end
-        
-                        if isnothing(model)
-                            model = model_nl8(size(fit_results[dataset]["trace_array"],2), ps..., fit_results[dataset]["v"], fit_results[dataset]["θh"], fit_results[dataset]["P"])
-                        end
+
+        for neuron in neurons_ec
+            mse_ewma_skip[dataset][neuron] = zeros(length(rngs),length(rngs),n_samples)
+            for rng1=1:length(fit_results[dataset]["ranges"])
+                for idx=1:size(fit_results[dataset]["sampled_trace_params"],3)
+                    ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng1,neuron,idx,1:8])
+                    if reset_param_6
+                        ps[6] = 0
+                    end
+    
+                    model = model_nl8(size(fit_results[dataset]["trace_array"],2), ps..., fit_results[dataset]["v"], fit_results[dataset]["θh"], fit_results[dataset]["P"])
+                    for rng2=1:length(fit_results[dataset]["ranges"])
                         rngs_timepts = idx_splitify_rng(collect(deepcopy(fit_results[dataset]["ranges"][rng2])), idx_splits, ewma_trim) 
                         mse_ewma_skip[dataset][neuron][rng1,rng2,idx] = cost_mse(fit_results[dataset]["trace_array"][neuron,rngs_timepts], model[rngs_timepts])
                     end

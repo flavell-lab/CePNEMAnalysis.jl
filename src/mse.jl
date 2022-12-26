@@ -158,7 +158,7 @@ function compute_CePNEM_MSE(fit_results, analysis_dict, datasets, get_h5_data; e
         
 
         for neuron in neurons_ec
-            mse_ewma_skip[dataset][neuron] = zeros(length(fit_results[dataset]["ranges"]),length(fit_results[dataset]["ranges"]),n_samples)
+            mse_ewma_skip[dataset][neuron] = zeros(length(fit_results[dataset]["ranges"]),length(fit_results[dataset]["ranges"]),size(fit_results[dataset]["sampled_trace_params"],3))
             for rng1=1:length(fit_results[dataset]["ranges"])
                 for idx=1:size(fit_results[dataset]["sampled_trace_params"],3)
                     ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng1,neuron,idx,1:8])

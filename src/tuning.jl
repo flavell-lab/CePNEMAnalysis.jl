@@ -1,4 +1,4 @@
-function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, relative_encoding_strength::Dict, θh_pos_is_ventral::Dict, v_ranges::Dict, θh_ranges::Dict, P_ranges::Dict)
+function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, relative_encoding_strength::Dict, θh_pos_is_ventral::Dict, v_ranges::Dict, θh_ranges::Dict, P_ranges::Dict; stat::Function=median)
     tuning_strength = Dict()
     zero_da = nothing
     @showprogress for dataset = keys(fit_results)
@@ -14,7 +14,7 @@ function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, rela
                     zero_da = zeros(size(deconvolved_activity[dataset][rng][neuron]))
                 end
                 tuning_strength[dataset][rng][neuron] = neuron_p_vals(deconvolved_activity[dataset][rng][neuron], zero_da, signal, 0.0, 0.0, 
-                        relative_encoding_strength[dataset][rng][neuron], compute_p=false, metric=identity)
+                        relative_encoding_strength[dataset][rng][neuron], compute_p=false, metric=identity, stat=stat)
 
                 for k in ["v_rect_neg", "v_rect_pos", "v_fwd", "v_rev"]
                     tuning_strength[dataset][rng][neuron][k] /= v_diff

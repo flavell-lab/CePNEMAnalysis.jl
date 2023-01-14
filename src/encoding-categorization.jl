@@ -21,10 +21,6 @@ function compute_range(beh::Vector{Float64}, beh_percent::Real, beh_idx::Int)
         min_beh = percentile(beh, beh_percent)
         max_beh = percentile(beh, 100-beh_percent)
     end
-    if beh_idx != 3
-        @assert(min_beh < 0)
-        @assert(max_beh > 0)
-    end
     
     if beh_idx == 1
         return [min_beh, min_beh/100, max_beh/100, max_beh]

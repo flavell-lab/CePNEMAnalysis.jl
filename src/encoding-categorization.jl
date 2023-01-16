@@ -21,10 +21,6 @@ function compute_range(beh::Vector{Float64}, beh_percent::Real, beh_idx::Int)
         min_beh = percentile(beh, beh_percent)
         max_beh = percentile(beh, 100-beh_percent)
     end
-    if beh_idx != 3
-        @assert(min_beh < 0)
-        @assert(max_beh > 0)
-    end
     
     if beh_idx == 1
         return [min_beh, min_beh/100, max_beh/100, max_beh]
@@ -131,8 +127,9 @@ To find encoding of a neuron, set the second activity to 0.
 To find encoding change, set it to a different time window.
 To find distance between neurons, set `compute_p = false` and specify the `metric` (default `abs`)
 to use to compare medians of the two posteriors.
+To use a statistic other than median, change `stat`.
 """
-function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, threshold_artifact::Real, threshold_weak::Real, relative_encoding_strength; compute_p::Bool=true, metric::Function=abs)
+function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, threshold_artifact::Real, threshold_weak::Real, relative_encoding_strength; compute_p::Bool=true, metric::Function=abs, stat::Function=median)
     categories = Dict()
     
     s = size(deconvolved_activity_1)
@@ -155,56 +152,56 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, t
                 # count equal points as 0.5
                 diff_1 = deconvolved_activity_1[:,i,k,m] .- deconvolved_activity_1[:,j,k,m]
                 diff_2 = deconvolved_activity_2[:,i,k,m] .- deconvolved_activity_2[:,j,k,m]
-                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_2 ./ v_ratio) - signal*median(diff_1 ./ v_ratio))
-                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+                categories["v_encoding"][i,j,k,m] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*stat(diff_2 ./ v_ratio) - signal*stat(diff_1 ./ v_ratio))
+                categories["v_encoding"][j,i,k,m] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*stat(diff_1 ./ v_ratio) - signal*stat(diff_2 ./ v_ratio))
             end
         end
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .- (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .- (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_2 ./ v_ratio) - signal*median(diff_1 ./ v_ratio))
-    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+    categories["v_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*stat(diff_2 ./ v_ratio) - signal*stat(diff_1 ./ v_ratio))
+    categories["v_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*stat(diff_1 ./ v_ratio) - signal*stat(diff_2 ./ v_ratio))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,2,1,1]) .+ (deconvolved_activity_1[:,3,1,1] .- deconvolved_activity_1[:,4,1,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,2,1,1]) .+ (deconvolved_activity_2[:,3,1,1] .- deconvolved_activity_2[:,4,1,1])
-    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*median(diff_2 ./ v_ratio) - signal*median(diff_1 ./ v_ratio))
-    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*median(diff_1 ./ v_ratio) - signal*median(diff_2 ./ v_ratio))
+    categories["v_fwd"] = compute_p ? prob_P_greater_Q(diff_1 .+ v_thresh, diff_2) : metric(signal*stat(diff_2 ./ v_ratio) - signal*stat(diff_1 ./ v_ratio))
+    categories["v_rev"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- v_thresh, diff_2) : metric(signal*stat(diff_1 ./ v_ratio) - signal*stat(diff_2 ./ v_ratio))
 
     for i = [1,4]
         k = (i == 1) ? "rev_θh_encoding" : "fwd_θh_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,2,1]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,2,1]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_2 ./ θh_ratio) - signal*median(diff_1 ./ θh_ratio))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_2 ./ θh_ratio) - signal*median(diff_1 ./ θh_ratio))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,1,2]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,1,2]
-        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_2 ./ P_ratio) - signal*median(diff_1 ./ P_ratio))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_2 ./ P_ratio) - signal*median(diff_1 ./ P_ratio))
+        categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1 ./ P_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1 ./ P_ratio))
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_2 ./ θh_ratio) - signal*median(diff_1 ./ θh_ratio))
-    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
+    categories["θh_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
+    categories["θh_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*stat(diff_1 ./ θh_ratio) - signal*stat(diff_2 ./ θh_ratio))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,2,1]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,2,1])
-    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*median(diff_2 ./ θh_ratio) - signal*median(diff_1 ./ θh_ratio))
-    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*median(diff_1 ./ θh_ratio) - signal*median(diff_2 ./ θh_ratio))
+    categories["θh_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
+    categories["θh_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*stat(diff_1 ./ θh_ratio) - signal*stat(diff_2 ./ θh_ratio))
     
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .- (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_2 ./ P_ratio) - signal*median(diff_1))
-    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2))
+    categories["P_rect_neg"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1))
+    categories["P_rect_pos"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*stat(diff_1 ./ P_ratio) - signal*stat(diff_2))
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,1,2]) .+ (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,1,2])
     diff_2 = (deconvolved_activity_2[:,1,1,1] .- deconvolved_activity_2[:,1,1,2]) .+ (deconvolved_activity_2[:,4,1,1] .- deconvolved_activity_2[:,4,1,2])
-    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*median(diff_2 ./ P_ratio) - signal*median(diff_1 ./ P_ratio))
-    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*median(diff_1 ./ P_ratio) - signal*median(diff_2 ./ P_ratio))
+    categories["P_pos"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1 ./ P_ratio))
+    categories["P_neg"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*stat(diff_1 ./ P_ratio) - signal*stat(diff_2 ./ P_ratio))
 
     return categories
 end
@@ -723,7 +720,6 @@ function get_neuron_category(dataset, rng, neuron, fit_results, neuron_categoriz
     return encoding, relative_enc_str, τ
 end
 
-# TODO: deal with different ranges in different datasets
 function get_enc_stats(fit_results, neuron_p, P_ranges; encoding_changes=nothing, P_diff_thresh=0.5, p=0.05, rngs_valid=nothing)
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
@@ -754,7 +750,7 @@ function get_enc_stats(fit_results, neuron_p, P_ranges; encoding_changes=nothing
             continue
         end
         for n=1:fit_results[dataset]["num_neurons"]
-            if !isnothing(encoding_changes) && !(n in encoding_changes[dataset][(1,2)]["neurons"])
+            if !isnothing(encoding_changes) && (!(n in keys(encoding_changes)) || !(n in encoding_changes[dataset][(1,2)]["neurons"]))
                 continue
             end
             max_npred = 0
@@ -881,3 +877,41 @@ function get_consistent_neurons(datasets, fit_results, neuron_categorization, di
     return consistent_neurons, inconsistent_neurons, parameters, fits
 end
 
+function add_weighted_subencoding_matrix!(fit_results, analysis_dict, datasets; use_relative=true)
+    analysis_dict["weighted_v_enc_matrix_baseline"] = zeros(3,3)
+    analysis_dict["weighted_θh_enc_matrix_baseline"] = zeros(3,3)
+    analysis_dict["weighted_P_enc_matrix_baseline"] = zeros(3,3)
+    for dataset in datasets
+        for rng=1:length(fit_results[dataset]["ranges"])
+            for beh = ["v", "θh", "P"]
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["analog_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_pos_rev_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_pos_fwd_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_pos_rect_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][3,1] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["fwd_slope_neg_rect_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][3,2] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_pos_rect_neg"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][1,3] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+                for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh]["rev_slope_neg_rect_pos"]
+                    analysis_dict["weighted_$(beh)_enc_matrix_baseline"][2,3] += use_relative ? median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) : 1
+                end
+            end
+        end
+    end
+end

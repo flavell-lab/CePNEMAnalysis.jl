@@ -145,7 +145,7 @@ function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_clas
             for rng1 in 1:length(fit_results[dataset]["ranges"])-1
                 for rng2 in rng1+1:length(fit_results[dataset]["ranges"])
                     rng = (rng1, rng2)
-                    push!(list_ec, analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][rng]["neurons"])
+                    append!(list_ec, analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][rng]["neurons"])
                 end
             end
         end

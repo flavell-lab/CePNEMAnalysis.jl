@@ -173,13 +173,13 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, t
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,2,1]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,2,1]
         categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*stat(diff_2 ./ θh_ratio) - signal*stat(diff_1 ./ θh_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- θh_thresh, diff_2) : metric(signal*stat(diff_1 ./ θh_ratio) - signal*stat(diff_2 ./ θh_ratio))
 
         k = (i == 1) ? "rev_P_encoding" : "fwd_P_encoding"
         diff_1 = deconvolved_activity_1[:,i,1,1] .- deconvolved_activity_1[:,i,1,2]
         diff_2 = deconvolved_activity_2[:,i,1,1] .- deconvolved_activity_2[:,i,1,2]
         categories[k*"_act"] = compute_p ? prob_P_greater_Q(diff_1 .+ P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1 ./ P_ratio))
-        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*stat(diff_2 ./ P_ratio) - signal*stat(diff_1 ./ P_ratio))
+        categories[k*"_inh"] = compute_p ? 1 - prob_P_greater_Q(diff_1 .- P_thresh, diff_2) : metric(signal*stat(diff_1 ./ P_ratio) - signal*stat(diff_2 ./ P_ratio))
     end
 
     diff_1 = (deconvolved_activity_1[:,1,1,1] .- deconvolved_activity_1[:,1,2,1]) .- (deconvolved_activity_1[:,4,1,1] .- deconvolved_activity_1[:,4,2,1])

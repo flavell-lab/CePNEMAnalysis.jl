@@ -218,12 +218,13 @@ end
 Computes median CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
 
 # Arguments
+- `fit_results`: CePNEM fit results.
 - `analysis_dict`: CePNEM fit analysis results dictionary.
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
 """
-function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
+function compute_median_CePNEM_fits(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
     median_CePNEM_fits = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets

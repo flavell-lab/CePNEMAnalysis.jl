@@ -103,14 +103,14 @@ Computes the relative encoding strength of all neurons in all datasets.
 - `fit_results::Dict`: Dictionary of Gen fit results.
 - `datasets::Vector{String}`: List of datasets to compute relative encoding strength for.
 """
-function get_relative_encoding_strength(fit_results::Dict, datasets::Vector{String})
+function get_relative_encoding_strength(fit_results::Dict, datasets::Vector{String}; dataset_mapping=nothing)
     relative_encoding_strength = Dict()
     @showprogress for dataset = datasets
         relative_encoding_strength[dataset] = Dict()
         for rng=1:length(fit_results[dataset]["ranges"])
             relative_encoding_strength[dataset][rng] = Dict()
             for neuron=1:fit_results[dataset]["num_neurons"]
-                v, θh, P, σ, σ_nops6, σ_v, σ_θh, σ_P, σ_d, σ_dv, σ_dθh, σ_dP = get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron)
+                v, θh, P, σ, σ_nops6, σ_v, σ_θh, σ_P, σ_d, σ_dv, σ_dθh, σ_dP = get_relative_encoding_strength_mt(fit_results, dataset, rng, neuron, dataset_mapping=dataset_mapping)
                 relative_encoding_strength[dataset][rng][neuron] = Dict()
                 relative_encoding_strength[dataset][rng][neuron]["v"] = v
                 relative_encoding_strength[dataset][rng][neuron]["θh"] = θh

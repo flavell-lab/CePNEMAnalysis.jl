@@ -20,6 +20,7 @@ using MultivariateStats
 using AnalysisBase
 using FlavellConstants
 using ANTSUNData
+using Clustering
 
 include("data.jl")
 include("dist.jl")

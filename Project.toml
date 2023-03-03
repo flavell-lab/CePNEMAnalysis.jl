@@ -6,6 +6,7 @@ version = "0.4.0"
 [deps]
 AnalysisBase = "efe86730-31dd-460e-8d73-167298a07af3"
 ANTSUNData = "cee8c2ed-1f8c-46f5-bbc8-43813539d123"
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
 EncoderModel = "42ff2c28-13f9-4ac3-bfdb-92395ca1401b"
 EncoderModelGen = "e5213632-2d12-443e-a840-e9f463057f13"

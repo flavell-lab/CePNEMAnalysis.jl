@@ -215,7 +215,7 @@ function extrapolate_behaviors(fit_results, datasets, θh_pos_is_ventral)
 end
 
 """
-Computes median CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
+Computes statistics of the CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
 
 # Arguments
 - `fit_results`: CePNEM fit results.
@@ -225,15 +225,24 @@ Computes median CePNEM fits of all neurons in each dataset across the set of ext
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
 - `use_pumping` (optional, default `true`): Whether to use pumping in CePNEM fits.
 - `normalize` (optional, default `true`): Whether to normalize CePNEM fits by signal value.
+
+# Returns
+- `median_CePNEM_fits`: Median of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
+- `mean_CePNEM_fits`: Mean of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
+- `var_CePNEM_fits`: Variance of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
 """
-function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
+function compute_extrapolated_CePNEM_posterior_stats(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
     median_CePNEM_fits = Dict()
+    mean_CePNEM_fits = Dict()
+    var_CePNEM_fits = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
         if dataset in keys(median_CePNEM_fits)
             continue
         end
         median_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
+        mean_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
+        var_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
         for rng = 1:length(fit_results[dataset]["ranges"])
             for neuron = 1:fit_results[dataset]["num_neurons"]
                 extrap = zeros(size(all_behs,1), n_idx)
@@ -248,10 +257,12 @@ function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral;
                     extrap[:,idx] .= model
                 end
                 median_CePNEM_fits[dataset][rng,neuron,:] .= median(extrap, dims=2)[:,1]
+                mean_CePNEM_fits[dataset][rng,neuron,:] .= mean(extrap, dims=2)[:,1]
+                var_CePNEM_fits[dataset][rng,neuron,:] .= var(extrap, dims=2)[:,1]
             end
         end
     end
-    return median_CePNEM_fits
+    return median_CePNEM_fits, mean_CePNEM_fits, var_CePNEM_fits
 end
 
 """

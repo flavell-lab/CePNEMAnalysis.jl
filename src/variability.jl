@@ -1,4 +1,6 @@
 """
+    DEPRECATED in favor of `compute_extrapolated_CePNEM_posterior_stats`.
+
     Extrapolates the model fits to the full range of behaviors defined by `analysis_dict["extrapolated_behaviors"]`.
     Computes the model fits for each point in the CePNEM posterior distribution, and computes the mean and variance of the extrapolated model fits at each time point.
 
@@ -56,6 +58,39 @@ function compute_extrapolated_fits_meanstd(analysis_dict::Dict, fit_results::Dic
     var_extrap = var_extrap[1:count-1, :]
 
     return mean_extrap, var_extrap, mean_extrap_dict, var_extrap_dict
+end
+
+"""
+    Sorts CePNEM extrapolated model fits by which neuron they correspond to.
+
+    # Arguments:
+    - `analysis_dict::Dict`: CePNEM analysis dictionary
+    - `mean_extrap_dict_all::Dict`: dictionary of mean extrapolated model fits, with keys (dataset, range, neuron)
+    - `var_extrap_dict_all::Dict`: dictionary of variance of extrapolated model fits, with keys (dataset, range, neuron)
+    - `datasets_use::Union{Nothing,Vector{String}}` (optional, default `nothing`): list of datasets to consider in the computation (should only include datasets from NeuroPAL animals). Use all if left at default.
+    - `rngs_use::Union{Nothing,Vector{Int}}` (optional, default `nothing`): list of time ranges to consider in the computation. Use all if left at default.
+"""
+function neuropal_sort_extrapolated_fits(analysis_dict::Dict, mean_extrap_dict_all::Dict, var_extrap_dict_all::Dict; datasets_use::Union{Nothing,Vector{String}}=nothing, rngs_use::Union{Nothing,Vector{Int}}=nothing)    
+    mean_extrap_dict = Dict()
+    var_extrap_dict = Dict()
+
+    for neuron in keys(analysis_dict["matches"])
+        mean_extrap_dict[neuron] = Dict()
+        var_extrap_dict[neuron] = Dict()
+        for (dataset, n) in analysis_dict["matches"][neuron]
+            if !isnothing(datasets_use) && !in(dataset, datasets_use)
+                continue
+            end
+            for rng=1:size(mean_extrap_dict_all[dataset],1)
+                if !isnothing(rngs_use) && !in(rng, rngs_use[dataset])
+                    continue
+                end
+                mean_extrap_dict[neuron][(dataset, rng, n)] = mean_extrap_dict_all[dataset][rng,n,:]
+                var_extrap_dict[neuron][(dataset, rng, n)] = var_extrap_dict_all[dataset][rng,n,:]
+            end
+        end
+    end
+    return mean_extrap_dict, var_extrap_dict
 end
 
 """

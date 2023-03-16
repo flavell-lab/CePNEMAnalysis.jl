@@ -97,7 +97,7 @@ export
     find_subset_idx,
     compute_tsne,
     extrapolate_behaviors,
-    compute_median_CePNEM_fits,
+    compute_extrapolated_CePNEM_posterior_stats,
     append_median_CePNEM_fits,
     project_CePNEM_to_UMAP,
     compute_umap_subcategories!,
@@ -139,6 +139,7 @@ export
     fit_state_classifier,
     # variability.jl
     compute_extrapolated_fits_meanstd,
+    neuropal_sort_extrapolated_fits,
     extrap_dict_to_array,
     weighted_zscore,
     baseline_correct_mean_extrap,

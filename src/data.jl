@@ -336,4 +336,3 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
         close(f)
     end
 end
-

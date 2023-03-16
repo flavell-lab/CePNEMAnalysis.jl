@@ -1,10 +1,12 @@
 module CePNEMAnalysis
 
 using FlavellBase
+using DataFrames
 using EncoderModel
 using EncoderModelGen
 using HDF5
 using Gen
+using GLM
 using JSON
 using Statistics
 using StatsBase
@@ -22,6 +24,7 @@ using FlavellConstants
 using ANTSUNData
 using Clustering
 
+include("crossvalidate.jl")
 include("data.jl")
 include("dist.jl")
 include("encoding-categorization.jl")
@@ -34,8 +37,16 @@ include("cluster.jl")
 include("pca.jl")
 include("strength.jl")
 include("tuning.jl")
+include("util.jl")
+include("variability.jl")
 
 export
+    # crossvalidate.jl
+    get_CePNEM_fit_score,
+    get_CePNEM_prior_score,
+    get_CePNEM_full_posterior_score,
+    compute_cv_accuracy,
+    compute_cv_accuracy_priorcompare,
     # data.jl
     load_CePNEM_output,
     get_pumping_ranges,
@@ -121,5 +132,17 @@ export
     get_tuning_strength,
     # decode.jl
     fit_decoder,
-    compute_variance_explained
+    compute_variance_explained,
+    # util.jl
+    gaussian_kernel,
+    convolve,
+    fit_state_classifier,
+    # variability.jl
+    compute_extrapolated_fits_meanstd,
+    extrap_dict_to_array,
+    weighted_zscore,
+    baseline_correct_mean_extrap,
+    compute_neuron_variability,
+    compute_intra_dataset_diffs,
+    merge_datasets
 end # module

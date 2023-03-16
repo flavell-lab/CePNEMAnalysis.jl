@@ -223,15 +223,17 @@ Computes median CePNEM fits of all neurons in each dataset across the set of ext
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
+- `use_pumping` (optional, default `true`): Whether to use pumping in CePNEM fits.
+- `normalize` (optional, default `true`): Whether to normalize CePNEM fits by signal value.
 """
-function compute_median_CePNEM_fits(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
+function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
     median_CePNEM_fits = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
         if dataset in keys(median_CePNEM_fits)
             continue
         end
-        median_CePNEM_fits[dataset] = zeros(2, fit_results[dataset]["num_neurons"], size(all_behs,1))
+        median_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
         for rng = 1:length(fit_results[dataset]["ranges"])
             for neuron = 1:fit_results[dataset]["num_neurons"]
                 extrap = zeros(size(all_behs,1), n_idx)
@@ -239,8 +241,11 @@ function compute_median_CePNEM_fits(fit_results, analysis_dict, datasets, θh_po
                     ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,idx,1:8])
                     ps[3] = ps[3] * (2*θh_pos_is_ventral[dataset]-1)
                     ps[6] = 0
-                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
-                    extrap[:,idx] .= (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
+                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], (use_pumping ? all_behs[:,3] : zeros(length(all_behs[:,3]))))
+                    if normalize
+                        model = (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
+                    end
+                    extrap[:,idx] .= model
                 end
                 median_CePNEM_fits[dataset][rng,neuron,:] .= median(extrap, dims=2)[:,1]
             end
@@ -283,8 +288,9 @@ Projects median CePNEM fits to UMAP space.
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
+- `use_pumping` (optional, default `true`): Whether to use pumping in the model.
 """
-function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
+function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true)
     umap_extrap_all_median = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
@@ -297,7 +303,7 @@ function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is
                     ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,idx,1:8])
                     ps[3] = ps[3] * (2*θh_pos_is_ventral[dataset]-1)
                     ps[6] = 0
-                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
+                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], (use_pumping ? all_behs[:,3] : zeros(length(all_behs[:,3]))))
                     extrap[:,idx] .= (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
                 end
                 umap_extrap_all_median[dataset][rng][neuron] = UMAP.transform(analysis_dict["extrapolated_umap_median"], extrap)

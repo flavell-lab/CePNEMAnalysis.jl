@@ -7,6 +7,7 @@ using EncoderModelGen
 using HDF5
 using Gen
 using GLM
+using GLMNet
 using JSON
 using Statistics
 using StatsBase
@@ -137,6 +138,7 @@ export
     gaussian_kernel,
     convolve,
     fit_state_classifier,
+    get_all_neurons_with_feature,
     # variability.jl
     compute_extrapolated_fits_meanstd,
     neuropal_sort_extrapolated_fits,

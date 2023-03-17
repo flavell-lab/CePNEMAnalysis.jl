@@ -57,3 +57,46 @@ function fit_state_classifier(x, t_stim)
 
     return (model, accuracy)
 end
+
+"""
+    Finds all neurons with the given encodings to behavior. Performs Benjamini-Hochberg multiple-hypothesis correction across multiple time ranges in the dataset, and performs Bonferroni correction
+        across the behaviors.
+
+    # Arguments:
+    - `fit_results::Dict`: Dictionary of CePNEM fit results.
+    - `analysis_dict::Dict`: Dictionary of CePNEM analysis results.
+    - `beh::String`: Behavior to analyze.
+    - `sub_behs::Union{Nothing,Vector{String}}`: Sub-behaviors to analyze. Can set to `nothing` for behaviors with no sub-behaviors (for example, `all`)
+    - `p::Float64` (optional, default `0.05`): p-value threshold for significance.
+"""
+function get_all_neurons_with_feature(fit_results::Dict, analysis_dict::Dict, beh::String, sub_behs::Union{Nothing,Vector{String}}; p::Float64=0.05)
+    traces_use = Dict()
+    neurons_use = Dict()
+    for dataset in keys(fit_results)
+        neurons_use[dataset] = Int32[]
+
+        for neuron in 1:size(fit_results[dataset]["trace_array"],1)
+            use = false
+            if isnothing(sub_behs)
+                pval = minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
+                if pval < p
+                    use = true
+                end
+            else
+                for sub_beh in sub_behs
+                    pval = length(sub_behs)*minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][sub_beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
+                    if pval < p
+                        use = true
+                        break
+                    end
+                end
+            end
+            if use
+                push!(neurons_use[dataset], neuron)
+            end
+        end
+
+        traces_use[dataset] = fit_results[dataset]["trace_array"][neurons_use[dataset], :]
+    end
+    return neurons_use, traces_use
+end

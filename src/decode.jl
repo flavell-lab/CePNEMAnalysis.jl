@@ -43,7 +43,7 @@ function fit_decoder(fit_results, datasets, decode_vars, t_val, λ_dict; traces_
     return dict_sol, dict_pred, dict_cost
 end
 
-function compute_variance_explained(dict_cost, fit_results, t_eval, decode_vars, λ_dict; min_P_variance=0.5)
+function compute_variance_explained(dict_cost, fit_results, t_val, decode_vars, λ_dict; min_P_variance=0.5)
     dict_quality = Dict()
     for (i,beh) in enumerate(decode_vars)
         dict_quality[beh] = Dict()

@@ -115,6 +115,7 @@ export
     plot_posterior_rgb,
     plot_arrow!,
     color_to_rgba,
+    plot_colorbar,
     # pca.jl
     extrapolate_neurons,
     make_distance_matrix,
@@ -131,6 +132,7 @@ export
     get_forwardness,
     get_dorsalness,
     get_tuning_strength,
+    calculate_tuning_strength_per_neuron,
     # decode.jl
     fit_decoder,
     compute_variance_explained,
@@ -139,6 +141,8 @@ export
     convolve,
     fit_state_classifier,
     get_all_neurons_with_feature,
+    correct_name,
+    find_peaks,
     # variability.jl
     compute_extrapolated_fits_meanstd,
     neuropal_sort_extrapolated_fits,

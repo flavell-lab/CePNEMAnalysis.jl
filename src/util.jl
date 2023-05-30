@@ -100,3 +100,60 @@ function get_all_neurons_with_feature(fit_results::Dict, analysis_dict::Dict, be
     end
     return neurons_use, traces_use
 end
+
+"""
+    correct_name(neuron_name)
+
+Corrects the name of a neuron by removing the "0" substring from the name if it contains "DB0" or "VB0".
+This causes the neuron name to be compatible with the connectome files.
+
+# Arguments:
+- `neuron_name::String`: The name of the neuron to be corrected.
+
+# Returns:
+- `neuron_name::String`: The corrected name of the neuron.
+"""
+function correct_name(neuron_name::String)
+    if occursin("DB0", neuron_name)
+        neuron_name = neuron_name[1:2]*neuron_name[4:end]
+    end
+    if occursin("VB0", neuron_name)
+        neuron_name = neuron_name[1:2]*neuron_name[4:end]
+    end
+    return neuron_name
+end
+
+"""
+find_peaks(neural_activity::Vector{Float64}, threshold::Float64)
+
+Find the peaks in a vector of neural activity above a given threshold.
+This method is most useful for finding spikes in the activity of spiking neurons.
+
+# Arguments:
+- `neural_activity::Vector{Float64}`: A vector of neural activity.
+- `threshold::Float64`: The threshold above which to consider a value a peak.
+
+# Returns:
+- `peaks::Vector{Int}`: A vector of indices of the peaks in the neural activity.
+- `peak_heights::Vector{Float64}`: A vector of the heights of the peaks in the neural activity.
+"""
+function find_peaks(neural_activity::Vector{Float64}, threshold::Float64)
+    peaks = Int[]
+    peak_heights = Float64[]
+    over_threshold = false
+    curr_peak = (-1, -Inf)
+    for i in 1:length(neural_activity)
+        if neural_activity[i] > threshold && !over_threshold
+            over_threshold = true
+            curr_peak = (i, neural_activity[i])
+        elseif neural_activity[i] < threshold && over_threshold
+            over_threshold = false
+            push!(peaks, curr_peak[1])
+            push!(peak_heights, curr_peak[2])
+            curr_peak = (-1, -Inf)
+        elseif neural_activity[i] > curr_peak[2] && over_threshold
+            curr_peak = (i, neural_activity[i])
+        end
+    end
+    return peaks, peak_heights
+end

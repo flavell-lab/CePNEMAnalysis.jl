@@ -841,7 +841,17 @@ function plot_posterior_rgb(posterior, x_rng, y_rng, param_x, param_y)
     ylabel!(labels[2])
 end
 
-function plot_arrow!(arrow_start, arrow_end, arrow_color, arrow_width, arrow_length)
+"""
+Plots an arrow from `arrow_start` to `arrow_end` with a given `arrow_color`, `arrow_width`, and `arrow_length`.
+
+# Arguments:
+- `arrow_start::Tuple{Real, Real}`: Starting point of the arrow.
+- `arrow_end::Tuple{Real, Real}`: Ending point of the arrow.
+- `arrow_color::Color`: Color of the arrow.
+- `arrow_width::Real`: Width of the arrow.
+- `arrow_length::Real`: Length of the arrow.
+"""
+function plot_arrow!(arrow_start::Tuple{Real, Real}, arrow_end::Tuple{Real, Real}, arrow_color::Color, arrow_width::Real, arrow_length::Real)
     Plots.plot!([arrow_start[1], arrow_end[1]], [arrow_start[2], arrow_end[2]], color=arrow_color, linewidth=arrow_width, label=nothing)
     d = sqrt((arrow_end[1] - arrow_start[1])^2 + (arrow_end[2] - arrow_start[2])^2)
     θ = asin((arrow_start[2] - arrow_end[2]) / d)
@@ -854,7 +864,76 @@ function plot_arrow!(arrow_start, arrow_end, arrow_color, arrow_width, arrow_len
     Plots.plot!([arrow_end[1], arrow_pt_2[1]], [arrow_end[2], arrow_pt_2[2]], color=arrow_color, linewidth=arrow_width, label=nothing)
 end    
 
-function color_to_rgba(color, alpha)
+"""
+    color_to_rgba(color::Color, alpha::Real) -> Tuple{Float64, Float64, Float64, Float64}
+
+Converts a `Color` object to an RGBA tuple with the given alpha value.
+
+# Arguments:
+- `color`: The `Color` object to convert.
+- `alpha`: The alpha value to use for the RGBA tuple.
+
+# Returns:
+- A tuple of four `Float64` values representing the RGBA values of the input `Color` object with the given alpha value.
+"""
+function color_to_rgba(color::Color, alpha::Real)::Tuple{Float64, Float64, Float64, Float64}
     return (color.r, color.g, color.b, alpha)
 end
 
+"""
+plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
+
+Plots a colorbar with a gradient of colors ranging from `rng_min` to `rng_max` with `n_colors` colors. The `other_ticks` argument is a vector of additional ticks to be displayed on the colorbar. The `cmap` argument is a `ColorMap` object that specifies the color scheme to be used. The `n_colors` argument is an `Integer` specifying the number of colors to be used in the gradient. The `figsize` argument is a tuple of two `Real` values that specifies the size of the figure.
+
+# Arguments:
+- `rng_min::Real`: The minimum value of the range of values to be displayed on the colorbar.
+- `rng_max::Real`: The maximum value of the range of values to be displayed on the colorbar.
+- `other_ticks::Vector{Real}`: A vector of additional ticks to be displayed on the colorbar.
+- `cmap::ColorMap`: A `ColorMap` object that specifies the color scheme to be used.
+- `n_colors::Integer`: The number of colors to be used in the gradient.
+- `figsize::Tuple{Real, Real}`: A tuple of two `Real` values that specifies the size of the figure.
+
+# Returns:
+- Nothing. The function is called for its side effects of plotting the colorbar.
+"""
+function plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
+    # Create an array with the range of input values for the colormap
+    gradient = reshape(range(rng_min, stop=rng_max, length=n_colors), 1, n_colors)
+
+    # Plot the gradient and the colorbar
+    fig, ax = subplots(figsize=figsize)
+    img = ax.imshow(gradient, cmap=cmap, aspect="auto", origin="lower")
+    colorbar(img, ax=ax, cmap=cmap, ticks=[rng_min, other_ticks..., rng_max])
+
+    gca().set_visible(false)
+end
+
+"""
+get_color_from_palette(value::Real, min_val::Real, max_val::Real, cmap::ColorMap) -> Color
+
+Returns the color corresponding to a given value in a colormap. The colormap is defined by the `cmap` argument, which is a `ColorMap` object. The `value` argument is the value for which the corresponding color is to be found. The `min_val` and `max_val` arguments define the range of values that the colormap spans.
+
+# Arguments:
+- `value`: The value for which the corresponding color is to be found.
+- `min_val`: The minimum value of the range of values that the colormap spans.
+- `max_val`: The maximum value of the range of values that the colormap spans.
+- `cmap`: A `ColorMap` object that defines the colormap.
+
+# Returns:
+- A `Color` object corresponding to the given value in the colormap.
+"""
+function get_color_from_palette(value::Real, min_val::Real, max_val::Real, cmap::ColorMap)
+    if value < min_val
+        value = min_val
+    elseif value > max_val
+        value = max_val
+    end
+
+    # Normalize the value to the range [0, 1]
+    normalized_value = (value - min_val) / (max_val - min_val)
+
+    # Get the RGB color from the colormap
+    color = cmap(normalized_value)
+
+    return color
+end

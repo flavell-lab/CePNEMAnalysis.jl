@@ -2,7 +2,7 @@ module CePNEMAnalysis
 
 using FlavellBase
 using EncoderModel
-using EncoderModelGen
+using CePNEM
 using HDF5
 using Gen
 using JSON

@@ -3,7 +3,7 @@ module CePNEMAnalysis
 using FlavellBase
 using DataFrames
 using EncoderModel
-using EncoderModelGen
+using CePNEM
 using HDF5
 using Gen
 using GLM
@@ -29,9 +29,11 @@ include("crossvalidate.jl")
 include("data.jl")
 include("dist.jl")
 include("encoding-categorization.jl")
+include("encoding-subcategorization.jl")
 include("encoding-change.jl")
 include("mse.jl")
 include("decode.jl")
+include("state.jl")
 include("plot.jl")
 include("umap.jl")
 include("cluster.jl")
@@ -71,12 +73,13 @@ export
     neuron_p_vals,
     categorize_neurons,
     categorize_all_neurons,
-    subcategorize_all_neurons!,
     get_neuron_category,
     get_enc_stats,
     get_enc_stats_pool,
-    get_consistent_neurons,
-    add_weighted_subencoding_matrix!,
+    # encoding-subcategorization.jl
+    subcategorize_all_neurons!,
+    sum_subencodings,
+    normalize_subencodings,
     # encoding-change.jl
     detect_encoding_changes,
     correct_encoding_changes,
@@ -127,7 +130,6 @@ export
     # strength.jl
     get_relative_encoding_strength_mt,
     get_relative_encoding_strength,
-    compute_encoding_change_strength,
     # tuning.jl
     get_forwardness,
     get_dorsalness,
@@ -136,6 +138,7 @@ export
     # decode.jl
     fit_decoder,
     compute_variance_explained,
+    average_dict_qualities,
     # util.jl
     gaussian_kernel,
     convolve,
@@ -143,6 +146,8 @@ export
     get_all_neurons_with_feature,
     correct_name,
     find_peaks,
+    parse_tuning_strength,
+    get_random_sample_without_feature,
     # variability.jl
     compute_extrapolated_fits_meanstd,
     neuropal_sort_extrapolated_fits,
@@ -151,5 +156,7 @@ export
     baseline_correct_mean_extrap,
     compute_neuron_variability,
     compute_intra_dataset_diffs,
-    merge_datasets
+    merge_datasets,
+    # state.jl
+    fit_state_classifier
 end # module

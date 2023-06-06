@@ -231,7 +231,7 @@ Computes statistics of the CePNEM fits of all neurons in each dataset across the
 - `mean_CePNEM_fits`: Mean of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
 - `var_CePNEM_fits`: Variance of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
 """
-function compute_extrapolated_CePNEM_posterior_stats(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
+function compute_extrapolated_CePNEM_posterior_stats(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
     median_CePNEM_fits = Dict()
     mean_CePNEM_fits = Dict()
     var_CePNEM_fits = Dict()

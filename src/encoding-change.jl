@@ -225,16 +225,6 @@ function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_chan
             n_neurons_quasi_static, n_neurons_dynamic, n_neurons_indeterminable
 end
 
-function get_subcats(beh)
-    if beh == "v"
-        subcats = [("rev_slope_neg", "rev_slope_pos"), ("rev", "fwd"), ("rect_neg", "rect_pos"), ("fwd_slope_neg", "fwd_slope_pos")]
-    elseif beh == "θh"
-        subcats = [("rev_dorsal", "rev_ventral"), ("dorsal", "ventral"), ("rect_dorsal", "rect_ventral"), ("fwd_dorsal", "fwd_ventral")]
-    elseif beh == "P"
-        subcats = [("rev_inh", "rev_act"), ("inh", "act"), ("rect_inh", "rect_act"), ("fwd_inh", "fwd_act")]
-    end 
-    return subcats
-end
 
 function get_enc_change_cat_p_vals(enc_change_dict)
     p_val_dict = Dict()
@@ -293,38 +283,4 @@ function get_enc_change_category(dataset, rngs, neuron, encoding_changes)
     end
 
     return encoding_change
-end
-
-function MSE_correct_encoding_changes(analysis_dict, datasets)
-    encoding_changing_neurons_msecorrect = Dict()
-    encoding_changing_neurons_msecorrect_mh = Dict()
-    for dataset = datasets
-        encoding_changing_neurons_msecorrect[dataset] = Dict()
-        encoding_changing_neurons_msecorrect_mh[dataset] = Dict()
-        for rngs in keys(analysis_dict["encoding_changes_corrected"][dataset])
-            encoding_changing_neurons_msecorrect[dataset][rngs] = Dict()
-            encoding_changing_neurons_msecorrect_mh[dataset][rngs] = Dict()
-            encoding_changing_neurons_msecorrect_mh[dataset][rngs]["p_vals"] = Dict()
-            encoding_changing_neurons_msecorrect_mh[dataset][rngs]["neurons"] = Int32[]
-            
-            p_vals = Float64[]
-            for neuron in analysis_dict["encoding_changes_corrected"][dataset][rngs]["all"]
-                combined_better = [prob_P_greater_Q(analysis_dict["mse_ewma_skip"][dataset][neuron][rngs[i],rngs[i],:],
-                        [analysis_dict["mse_fits_combinedtrain"][dataset][rngs][neuron]["cost_test"][rngs[i]]]) for i=1:2]
-                encoding_changing_neurons_msecorrect[dataset][rngs][neuron] = combined_better
-                push!(p_vals, min(1,minimum(combined_better) * length(combined_better)))
-            end
-            if length(p_vals) == 0
-                continue
-            end
-            p_vals = adjust(p_vals, BenjaminiHochberg())
-            for (i,neuron) in enumerate(analysis_dict["encoding_changes_corrected"][dataset][rngs]["all"])
-                encoding_changing_neurons_msecorrect_mh[dataset][rngs]["p_vals"][neuron] = p_vals[i]
-                if p_vals[i] < 0.05
-                    push!(encoding_changing_neurons_msecorrect_mh[dataset][rngs]["neurons"], neuron)
-                end
-            end
-        end
-    end
-    return encoding_changing_neurons_msecorrect, encoding_changing_neurons_msecorrect_mh
 end

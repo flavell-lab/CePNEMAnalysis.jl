@@ -58,48 +58,6 @@ function fit_state_classifier(x, t_stim)
     return (model, accuracy)
 end
 
-"""
-    Finds all neurons with the given encodings to behavior. Performs Benjamini-Hochberg multiple-hypothesis correction across multiple time ranges in the dataset, and performs Bonferroni correction
-        across the behaviors.
-
-    # Arguments:
-    - `fit_results::Dict`: Dictionary of CePNEM fit results.
-    - `analysis_dict::Dict`: Dictionary of CePNEM analysis results.
-    - `beh::String`: Behavior to analyze.
-    - `sub_behs::Union{Nothing,Vector{String}}`: Sub-behaviors to analyze. Can set to `nothing` for behaviors with no sub-behaviors (for example, `all`)
-    - `p::Float64` (optional, default `0.05`): p-value threshold for significance.
-"""
-function get_all_neurons_with_feature(fit_results::Dict, analysis_dict::Dict, beh::String, sub_behs::Union{Nothing,Vector{String}}; p::Float64=0.05)
-    traces_use = Dict()
-    neurons_use = Dict()
-    for dataset in keys(fit_results)
-        neurons_use[dataset] = Int32[]
-
-        for neuron in 1:size(fit_results[dataset]["trace_array"],1)
-            use = false
-            if isnothing(sub_behs)
-                pval = minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
-                if pval < p
-                    use = true
-                end
-            else
-                for sub_beh in sub_behs
-                    pval = length(sub_behs)*minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][sub_beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
-                    if pval < p
-                        use = true
-                        break
-                    end
-                end
-            end
-            if use
-                push!(neurons_use[dataset], neuron)
-            end
-        end
-
-        traces_use[dataset] = fit_results[dataset]["trace_array"][neurons_use[dataset], :]
-    end
-    return neurons_use, traces_use
-end
 
 """
     correct_name(neuron_name)
@@ -156,4 +114,163 @@ function find_peaks(neural_activity::Vector{Float64}, threshold::Float64)
         end
     end
     return peaks, peak_heights
+end
+
+"""
+    parse_tuning_strength(tuning_strength::Dict{String, Any}, beh::String, encoding::String)
+
+Parses the tuning strength of a neuron for a given behavior and encoding.
+
+# Arguments:
+- `tuning_strength::Dict{String, Any}`: A dictionary containing the tuning strength of a neuron.
+- `beh::String`: The behavior for which to find the tuning strength.
+- `encoding::String`: The encoding for which to find the tuning strength.
+
+# Returns:
+- `tuning_strength::Any`: The tuning strength of the neuron for the given behavior encoding.
+"""
+function parse_tuning_strength(tuning_strength::Dict{String, Any}, beh::String, encoding::String)
+    if beh == "v"
+        if encoding in ["rev_slope_neg", "rev_slope_pos"]
+            return tuning_strength["v_encoding"][1,2,1,1]
+        elseif encoding in ["fwd_slope_neg", "fwd_slope_pos"]
+            return tuning_strength["v_encoding"][3,4,1,1]
+        elseif encoding in ["fwd", "rev"]
+            return tuning_strength["v_fwd"]
+        elseif encoding in ["rect_neg", "rect_pos"]
+            return tuning_strength["v_rect_pos"]
+        end
+    elseif beh == "θh"
+        if encoding in ["dorsal", "ventral"]
+            return tuning_strength["θh_dorsal"]
+        elseif encoding in ["fwd_ventral", "fwd_dorsal"]
+            return tuning_strength["fwd_θh_encoding_dorsal"]
+        elseif encoding in ["rev_ventral", "rev_dorsal"]
+            return tuning_strength["rev_θh_encoding_dorsal"]
+        elseif encoding in ["rect_dorsal", "rect_ventral"]
+            return tuning_strength["θh_rect_dorsal"]
+        end
+    end
+    return tuning_strength
+end
+
+"""
+    get_all_neurons_with_feature(fit_results::Dict{String, Any}, analysis_dict::Dict{String, Any}, beh::String, sub_behs::Union{Nothing, Vector{String}}, p::Float64=0.05)
+
+Get all neurons that encode a given behavior or sub-behavior feature.
+
+# Arguments:
+- `fit_results::Dict{String, Any}`: A dictionary containing the results of fitting CePNEM to neural data.
+- `analysis_dict::Dict{String, Any}`: A dictionary containing the results of analyzing the neural data.
+- `beh::String`: Find neurons that encode this behavior and the corresponding sub-behavior.
+- `sub_behs::Union{Nothing, Vector{String}}`: Find neurons that encode this sub-behavior. If `nothing`, only encodings of the main behavior are considered.
+- `p::Float64=0.05`: The p-value threshold for considering a neuron to have the given feature.
+
+# Returns:
+- `neurons_use::Dict{String, Vector{Int32}}`: A dictionary containing the indices of the neurons with the given feature for each dataset.
+"""
+function get_all_neurons_with_feature(fit_results::Dict{String, Any}, analysis_dict::Dict{String, Any}, beh::String, sub_behs::Union{Nothing, Vector{String}}, p::Float64=0.05)
+    traces_use = Dict()
+    neurons_use = Dict()
+    for dataset in keys(fit_results)
+        neurons_use[dataset] = Int32[]
+
+        for neuron in 1:size(fit_results[dataset]["trace_array"],1)
+            use = false
+            if isnothing(sub_behs)
+                pval = minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
+                if pval < p
+                    use = true
+                end
+            else
+                for sub_beh in sub_behs
+                    pval = length(sub_behs)*minimum(adjust([analysis_dict["neuron_p"][dataset][rng][beh][sub_beh][neuron] for rng = 1:length(fit_results[dataset]["ranges"])], BenjaminiHochberg()))
+                    if pval < p
+                        use = true
+                        break
+                    end
+                end
+            end
+            if use
+                push!(neurons_use[dataset], neuron)
+            end
+        end
+
+        traces_use[dataset] = fit_results[dataset]["trace_array"][neurons_use[dataset], :]
+    end
+    return neurons_use, traces_use
+end
+
+"""
+    get_random_sample_without_feature(fit_results::Dict{String, Any}, analysis_dict::Dict{String, Any}, neurons_with_feature::Dict{String, Vector{Int32}})
+
+Get a random sample of neurons that do not encode a given feature.
+
+# Arguments:
+- `fit_results::Dict{String, Any}`: A dictionary containing the results of fitting CePNEM to neural data.
+- `analysis_dict::Dict{String, Any}`: A dictionary containing the results of analyzing the neural data.
+- `neurons_with_feature::Dict{String, Vector{Int32}}`: A dictionary containing the indices of the neurons that encode the feature for each dataset.
+
+# Returns:
+- `neurons_use::Dict{String, Vector{Int32}}`: A dictionary containing the indices of the neurons without the given feature for each dataset.
+- `traces_use::Dict{String, Array{Float64, 2}}`: A dictionary containing the traces of the neurons without the given feature for each dataset.
+"""
+function get_random_sample_without_feature(fit_results::Dict{String, Any}, analysis_dict::Dict{String, Any}, neurons_with_feature::Dict{String, Vector{Int32}})
+    traces_use = Dict{String, Array{Float64, 2}}()
+    neurons_use = Dict{String, Vector{Int32}}()
+    for dataset in keys(fit_results)
+        neurons_available = [i for i in 1:size(fit_results[dataset]["trace_array"],1) if !(i in neurons_with_feature[dataset])]
+        neurons_use[dataset] = sample(neurons_available, length(neurons_with_feature[dataset]), replace=false)
+        traces_use[dataset] = fit_results[dataset]["trace_array"][neurons_use[dataset], :]
+    end
+    return neurons_use, traces_use
+end
+
+"""
+    get_frac_responding(neurons::Vector{Int}, responses::Dict{String, Any}, response_keys::Vector{String}, decide_fn::Function; response_keys_2::Union{Nothing, Vector{String}}=nothing, decide_fn_2::Union{Nothing, Function}=nothing)
+
+Calculate the fraction of neurons that respond to the heat stimulus in the given way.
+
+# Arguments:
+- `neurons::Vector{String}`: A vector of neurons to consider.
+- `responses::Dict{String, Any}`: A dictionary containing the responses of the neurons to the stimulus.
+- `response_keys::Vector{String}`: A vector of keys corresponding to the response types to consider in the `responses` dictionary.
+- `decide_fn::Function`: A function that takes a response and returns the strength of that response.
+- `response_keys_2::Union{Nothing, Vector{String}}=nothing`: A vector of keys to access a second set of responses in the `responses` dictionary. If `nothing`, only the first set of responses is used. If set, this is used as a denominator to normalize the responses.
+- `decide_fn_2::Union{Nothing, Function}=nothing`: A function that takes a response from the second set of responses and returns a boolean indicating whether the neuron responded. If `nothing`, all neurons are considered to have responded to the second set of responses.
+
+# Returns:
+- `frac_responding::Float64`: The fraction of neurons that responded to the stimulus.
+"""
+function get_frac_responding(neurons::Vector{String}, responses::Dict{String, Any}, response_keys::Vector{String}, decide_fn::Function; response_keys_2::Union{Nothing, Vector{String}}=nothing, decide_fn_2::Union{Nothing, Function}=nothing)
+    responses_use = responses
+    for k in response_keys
+        responses_use = responses_use[k]
+    end
+    responses_use2 = responses
+    if !isnothing(response_keys_2)
+        for k in response_keys_2
+            responses_use2 = responses_use2[k]
+        end
+    end
+    n_responding = 0
+    n_tot = 0
+    for neuron in neurons
+        for response in responses_use[neuron]
+            n_responding += decide_fn(response)
+            n_tot += (isnothing(decide_fn_2) ? 1 : decide_fn_2(responses_use2[neuron]))
+        end
+    end
+    return (n_responding == 0) ? 0.0 : n_responding / n_tot
+end
+
+function get_subcats(beh)
+    if beh == "v"
+        subcats = [("rev_slope_neg", "rev_slope_pos"), ("rev", "fwd"), ("rect_neg", "rect_pos"), ("fwd_slope_neg", "fwd_slope_pos")]
+    elseif beh == "θh"
+        subcats = [("rev_dorsal", "rev_ventral"), ("dorsal", "ventral"), ("rect_dorsal", "rect_ventral"), ("fwd_dorsal", "fwd_ventral")]
+    elseif beh == "P"
+        subcats = [("rev_inh", "rev_act"), ("inh", "act"), ("rect_inh", "rect_act"), ("fwd_inh", "fwd_act")]
+    end 
+    return subcats
 end

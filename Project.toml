@@ -1,7 +1,7 @@
 name = "CePNEMAnalysis"
 uuid = "6e2f18b1-61de-4cf1-b8ce-3b1fbfe2ed91"
 authors = ["goldenratio1618 <adamatanas@gmail.com>"]
-version = "0.5.0"
+version = "1.0"
 
 [deps]
 AnalysisBase = "efe86730-31dd-460e-8d73-167298a07af3"

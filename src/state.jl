@@ -12,7 +12,7 @@ Fit a logistic regression model to classify whether a set of neurons contains "s
 - `model`: Trained logistic regression model.
 - `accuracy`: Accuracy of the trained model.
 """
-fit_state_classifier(x::Matrix{Float64}, t_stim::Int)
+function fit_state_classifier(x::Matrix{Float64}, t_stim::Int)
     y = zeros(Int64, size(x,2))
     y[1:t_stim] .= 0
     y[t_stim+1:end] .= 1

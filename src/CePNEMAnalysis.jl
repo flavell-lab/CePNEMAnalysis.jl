@@ -41,7 +41,6 @@ include("pca.jl")
 include("strength.jl")
 include("tuning.jl")
 include("util.jl")
-include("variability.jl")
 
 export
     # crossvalidate.jl

@@ -283,8 +283,12 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
         end
         
         path_data_ = joinpath(path_h5_data, "$(dataset)-data.h5")
-        data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events"])
-        dict_dataset["reversal_events"] = data_dict["behavior/reversal_events"]'
+        data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events", "timestamp_confocal", "trace_original", "trace_array_F20"])
+        dict_dataset["reversal_events"] = data_dict["behavior/reversal_events"]
+        dict_dataset["timestamp_confocal"] = data_dict["timestamp_confocal"]
+        dict_dataset["trace_original"] = data_dict["trace_original"]
+        dict_dataset["trace_array_F20"] = data_dict["trace_array_F20"]
+        
         if haskey(data_dict, "stim_begin_confocal")
             stim = Int(data_dict["stim_begin_confocal"][1])
             dict_dataset["events"] = Dict("heat"=>[stim])

@@ -1,4 +1,95 @@
 """
+Computes the relative encoding strength of the three behaviors, together with standard deviations of full and deconvolved model fits, for a single CePNEM fit.
+
+# Arguments
+- `ps::Vector{Float64}`: Vector of model parameters.
+- `b_v::Vector{Float64}`: Vector of behavioral values for the velocity behavior.
+- `b_θh::Vector{Float64}`: Vector of behavioral values for the heading behavior.
+- `b_P::Vector{Float64}`: Vector of behavioral values for the persistence behavior.
+- `b_null::Union{Vector{Float64}, Nothing}` (optional, default `nothing`): Vector of behavioral values for the null behavior. If `nothing`, a vector of zeros is used.
+"""
+function get_relative_encoding_strength!(ps::Vector{Float64}, b_v::Vector{Float64}, b_θh::Vector{Float64}, b_P::Vector{Float64}; b_null::Union{Vector{Float64}, Nothing}=nothing)
+    max_t = length(b_v)
+
+    if isnothing(b_null)
+        b_null = zeros(max_t)
+    end
+
+    model_full = model_nl8(max_t, ps..., b_v, b_θh, b_P)
+    model_nov = model_nl8(max_t, ps..., b_null, b_θh, b_P)
+    model_noθh = model_nl8(max_t, ps..., b_v, b_null, b_P)
+    model_noP = model_nl8(max_t, ps..., b_v, b_θh, b_null)
+
+    mean_v = mean(b_v)
+    mean_θh = mean(b_θh)
+    mean_P = mean(b_P)
+
+    model_deconv = zeros(max_t)
+    model_deconv_v = zeros(max_t)
+    model_deconv_θh = zeros(max_t)
+    model_deconv_P = zeros(max_t)
+
+    for i_t = 1:max_t
+        model_deconv[i_t] = deconvolved_model_nl8(ps, b_v[i_t], b_θh[i_t], b_P[i_t])
+        model_deconv_v[i_t] = deconvolved_model_nl8(ps, b_v[i_t], b_null[i_t], b_null[i_t])
+        model_deconv_θh[i_t] = deconvolved_model_nl8(ps, b_null[i_t], b_θh[i_t], b_null[i_t])
+        model_deconv_P[i_t] = deconvolved_model_nl8(ps, b_null[i_t], b_null[i_t], b_P[i_t])
+    end       
+
+    ps[6] = mean(model_deconv) # set initial condition to mean so as not to contaminate convolution computation
+    model_full_ps6corr = model_nl8(max_t, ps..., b_v, b_θh, b_P)
+
+    ps[6] = mean(model_deconv_v)
+    model_v = model_nl8(max_t, ps..., b_v, b_null, b_null)
+
+    ps[6] = mean(model_deconv_θh)
+    model_θh = model_nl8(max_t, ps..., b_null, b_θh, b_null)
+
+    ps[6] = mean(model_deconv_P)
+    model_P = model_nl8(max_t, ps..., b_null, b_null, b_P)
+
+    std_full = std(model_full)
+    std_v = std(model_v)
+    std_θh = std(model_θh)
+    std_P = std(model_P)
+
+    std_full_ps6corr = std(model_full_ps6corr)
+    std_deconv = std(model_deconv)
+    std_deconv_v = std(model_deconv_v)
+    std_deconv_θh = std(model_deconv_θh)
+    std_deconv_P = std(model_deconv_P)
+
+    ev = cost_mse(model_full, model_nov)
+    eθh = cost_mse(model_full, model_noθh)
+    eP = cost_mse(model_full, model_noP)
+
+    s = ev + eθh + eP
+    err_v = ev / s
+    err_θh = eθh / s
+    err_P = eP / s
+
+    dict_ret = Dict()
+    dict_ret["v"] = err_v
+    dict_ret["θh"] = err_θh
+    dict_ret["P"] = err_P
+    dict_ret["std"] = std_full
+    dict_ret["var"] = std_full ^ 2
+    dict_ret["var_allbeh"] = s
+    dict_ret["std_ps6corr"] = std_full_ps6corr
+    dict_ret["std_v"] = std_v
+    dict_ret["std_θh"] = std_θh
+    dict_ret["std_P"] = std_P
+    dict_ret["std_deconv"] = std_deconv
+    dict_ret["std_deconv_v"] = std_deconv_v
+    dict_ret["std_deconv_θh"] = std_deconv_θh
+    dict_ret["std_deconv_P"] = std_deconv_P
+    dict_ret["model_full"] = model_full
+
+    return dict_ret
+end
+
+
+"""
 Computes the relative encoding strength of the three behaviors, together with standard deviations of full and deconvolved model fits.
 
 # Arguments

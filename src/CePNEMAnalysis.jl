@@ -128,6 +128,7 @@ export
     cluster_dist,
     dendrocolor!,
     # strength.jl
+    get_relative_encoding_strength!,
     get_relative_encoding_strength_mt,
     get_relative_encoding_strength,
     # tuning.jl
@@ -148,15 +149,6 @@ export
     find_peaks,
     parse_tuning_strength,
     get_random_sample_without_feature,
-    # variability.jl
-    compute_extrapolated_fits_meanstd,
-    neuropal_sort_extrapolated_fits,
-    extrap_dict_to_array,
-    weighted_zscore,
-    baseline_correct_mean_extrap,
-    compute_neuron_variability,
-    compute_intra_dataset_diffs,
-    merge_datasets,
     # state.jl
     fit_state_classifier
 end # module

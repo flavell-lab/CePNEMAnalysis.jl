@@ -184,7 +184,7 @@ Exports CePNEM analysis results to JSON file for use on the website.
 - `path_output::String`: Name of JSON file to export to.
 - `path_h5::String`: Path to HDF5 directory containing raw data.
 """
-function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector{String}, path_output::String, path_h5::String)
+function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String})
     dict_summary = OrderedDict()    
     @showprogress for dataset = datasets
         if !(dataset in keys(analysis_dict["neuron_categorization"]))
@@ -273,8 +273,8 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
 
         dict_dataset["dataset_type"] = dict_summary[dataset]["dataset_type"]
 
-        if dataset in datasets_neuropal
-            idx_uid = findall(x->x==dataset, list_uid)[1]
+        if dataset in list_uid_neuropal # TODO: Replace this with a Dictionary
+            idx_uid = findall(x->x==dataset, list_uid_neuropal)[1]
             dict_summary[dataset]["num_labeled"] = length(list_match_dict[idx_uid][1])
             dict_dataset["labeled"] = list_match_dict[idx_uid][1]
         else
@@ -283,12 +283,12 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
         end
         
         path_data_ = joinpath(path_h5_data, "$(dataset)-data.h5")
-        data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events", "timestamp_confocal", "trace_original", "trace_array_F20"])
+        data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events"])
         dict_dataset["reversal_events"] = data_dict["behavior/reversal_events"]
         dict_dataset["timestamp_confocal"] = data_dict["timestamp_confocal"]
         dict_dataset["trace_original"] = data_dict["trace_original"]
         dict_dataset["trace_array_F20"] = data_dict["trace_array_F20"]
-        
+
         if haskey(data_dict, "stim_begin_confocal")
             stim = Int(data_dict["stim_begin_confocal"][1])
             dict_dataset["events"] = Dict("heat"=>[stim])
@@ -315,28 +315,29 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
             write(f, JSON.json(ordered_matches))
         end
         
-        f = h5open(path_h5_enc)
+        ## TODO: Fix this
+        # f = h5open(path_h5_enc)
         
-        dict_enc_table = Dict()
+        # dict_enc_table = Dict()
         
-        dict_enc_table["encoding_table"] = transpose(f["encoding_table"][:,:])
-        for k = ["class", "count", "enc_v", "enc_strength_v", "enc_hc",
-                "enc_strength_hc", "enc_pumping", "enc_strength_pumping", "tau"]
-            try
-                dict_enc_table[k] = f[k][:,1]
-            catch e
-                dict_enc_table[k] = f[k][:]
-            end
-        end
+        # dict_enc_table["encoding_table"] = transpose(f["encoding_table"][:,:])
+        # for k = ["class", "count", "enc_v", "enc_strength_v", "enc_hc",
+        #         "enc_strength_hc", "enc_pumping", "enc_strength_pumping", "tau"]
+        #     try
+        #         dict_enc_table[k] = f[k][:,1]
+        #     catch e
+        #         dict_enc_table[k] = f[k][:]
+        #     end
+        # end
         
-        dict_enc_table["encoding_change_abundance"] = 
-            [(n in keys(analysis_dict["encoding_change_abundance"]) ? analysis_dict["encoding_change_abundance"][n] : 0)
-            for n in dict_enc_table["class"]]
+        # dict_enc_table["encoding_change_abundance"] = 
+        #     [(n in keys(analysis_dict["encoding_change_abundance"]) ? analysis_dict["encoding_change_abundance"][n] : 0)
+        #     for n in dict_enc_table["class"]]
         
-        open(joinpath(path_output, "encoding_table.json"), "w") do g
-            write(g, JSON.json(dict_enc_table))
-        end
+        # open(joinpath(path_output, "encoding_table.json"), "w") do g
+        #     write(g, JSON.json(dict_enc_table))
+        # end
         
-        close(f)
+        # close(f)
     end
 end

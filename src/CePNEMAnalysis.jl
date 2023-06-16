@@ -24,6 +24,7 @@ using AnalysisBase
 using FlavellConstants
 using ANTSUNData
 using Clustering
+using DataStructures
 
 include("crossvalidate.jl")
 include("data.jl")
@@ -55,6 +56,7 @@ export
     add_to_analysis_dict!,
     compute_signal,
     neuropal_data_to_dict,
+    export_to_json,
     # dist.jl
     update_cmap!,
     evaluate_pdf_xgiveny!,

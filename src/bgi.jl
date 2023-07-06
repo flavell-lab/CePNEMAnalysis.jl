@@ -59,39 +59,14 @@ function get_CePNEM_full_posterior_score(full_posterior, neuron_trace, v, θh, P
     return get_CePNEM_fit_score(model_params, neuron_trace, v, θh, P)
 end
 
-""" 
-    Compute the cross-validated accuracy of the model, using median of scores as the metric.
-
-    # Arguments:
-    - `train_score::Vector{Float64}`: The model scores on the training data.
-    - `test_score::Vector{Float64}`: The model scores on the test data.
-    - `prior_score::Vector{Float64}`: The model scores on the prior data.
-"""
-function compute_cv_accuracy(train_score::Vector{Float64}, test_score::Vector{Float64}, prior_score::Vector{Float64})
-    med_train = median(train_score)
-    med_test = median(test_score)
-    med_prior = median(prior_score)
-
-    if med_train < med_prior
-        @warn "Train score is lower than prior score: $med_train < $med_prior"
-        return 0
-    end
-
-    if med_train < med_test
-        @warn "Train score is lower than test score: $med_train < $med_test"
-        return 1
-    end
-
-    return 1 - (med_train - med_test) / (med_train - med_prior)
-end
 
 """
-    Compute the cross-validated accuracy of the model, using fractional overperformance relative to the prior as the metric.
+    Compute the Bayesian Generalization Index (BGI) of the model, using fractional overperformance relative to the prior as the metric.
 
     # Arguments:
     - `test_score::Vector{Float64}`: The model scores on the test data.
     - `prior_score::Vector{Float64}`: The model scores on the prior data.
 """
-function compute_cv_accuracy_priorcompare(test_score, prior_score)
+function compute_BGI(test_score, prior_score)
     return 2 * prob_P_greater_Q(test_score, prior_score) - 1
 end

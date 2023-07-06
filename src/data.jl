@@ -1,5 +1,5 @@
 """
-Loads Gen output data.
+Loads CePNEM output data.
 
 # Arguments:
 - `datasets::Vector{String}`: Datasets to load
@@ -10,8 +10,9 @@ Loads Gen output data.
 - `n_particles`: Number of particles in the Gen fit
 - `n_samples`: Number of samples from the posterior given by the Gen fit
 - `is_mcmc`: Whether fits are done via MCMC (as opposed to SMC)
+- `load_posterior` (optional, default `true`): Whether to load the posterior samples. If `false`, only the fit ranges and traces are loaded.
 """
-function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc)
+function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc; load_posterior::Bool=true)
     fit_results = Dict()
     incomplete_datasets = Dict()
 
@@ -46,6 +47,10 @@ function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_out
                 mean(diff(list_t_confocal[801:n_t]))) / 2
         else
             fit_results[dataset]["avg_timestep"] = mean(diff(list_t_confocal[1:n_t]))
+        end
+
+        if !load_posterior
+            continue
         end
 
         incomplete_datasets[dataset] = zeros(Bool, length(ranges), n_neurons)

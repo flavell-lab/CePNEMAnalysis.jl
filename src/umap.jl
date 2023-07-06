@@ -270,19 +270,20 @@ Appends median CePNEM fits together into a single array.
 
 # Arguments
 - `fit_results`: CePNEM fit results.
-- `analysis_dict`: CePNEM fit analysis results dictionary.
+- `analysis_dict`: CePNEM fit analysis results dictionary containing the `extrapolated_behaviors` key.
+- `umap_dict`: UMAP results dictionary containing the `median_CePNEM_fits` key.
 - `datasets`: Array of datasets to use.
 """
-function append_median_CePNEM_fits(fit_results, analysis_dict, datasets)
+function append_median_CePNEM_fits(fit_results, analysis_dict, umap_dict, datasets)
     median_CePNEM_fits_all = zeros(2*sum([fit_results[d]["num_neurons"] for d in datasets]), size(analysis_dict["extrapolated_behaviors"], 1))
     count = 1
     for dataset in datasets
-        if !(dataset in keys(analysis_dict["median_CePNEM_fits"]))
+        if !(dataset in keys(umap_dict["median_CePNEM_fits"]))
             error("Dataset $(dataset) did not have median computed")
         end
         for rng=1:length(fit_results[dataset]["ranges"])
             for neuron=1:fit_results[dataset]["num_neurons"]
-                median_CePNEM_fits_all[count,:] .= analysis_dict["median_CePNEM_fits"][dataset][rng,neuron,:]
+                median_CePNEM_fits_all[count,:] .= umap_dict["median_CePNEM_fits"][dataset][rng,neuron,:]
                 count += 1
             end
         end
@@ -296,6 +297,7 @@ Projects median CePNEM fits to UMAP space.
 # Arguments
 - `fit_results`: CePNEM fit results.
 - `analysis_dict`: CePNEM fit analysis results dictionary.
+- `umap_dict`: UMAP results dictionary containing the `extrapolated_umap_median` key.
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.

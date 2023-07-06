@@ -26,7 +26,7 @@ using ANTSUNData
 using Clustering
 using DataStructures
 
-include("crossvalidate.jl")
+include("bgi.jl")
 include("data.jl")
 include("dist.jl")
 include("encoding-categorization.jl")
@@ -44,11 +44,11 @@ include("tuning.jl")
 include("util.jl")
 
 export
-    # crossvalidate.jl
+    # bgi.jl
     get_CePNEM_fit_score,
     get_CePNEM_prior_score,
     get_CePNEM_full_posterior_score,
-    compute_cv_accuracy,
+    compute_BGI,
     compute_cv_accuracy_priorcompare,
     # data.jl
     load_CePNEM_output,

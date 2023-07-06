@@ -303,7 +303,7 @@ Projects median CePNEM fits to UMAP space.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
 - `use_pumping` (optional, default `true`): Whether to use pumping in the model.
 """
-function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true)
+function project_CePNEM_to_UMAP(fit_results, analysis_dict, umap_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true)
     umap_extrap_all_median = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
@@ -319,7 +319,7 @@ function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is
                     model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], (use_pumping ? all_behs[:,3] : zeros(length(all_behs[:,3]))))
                     extrap[:,idx] .= (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
                 end
-                umap_extrap_all_median[dataset][rng][neuron] = UMAP.transform(analysis_dict["extrapolated_umap_median"], extrap)
+                umap_extrap_all_median[dataset][rng][neuron] = UMAP.transform(umap_dict["extrapolated_umap_median"], extrap)
             end
         end
     end

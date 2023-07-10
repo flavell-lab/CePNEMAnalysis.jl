@@ -150,7 +150,7 @@ function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_clas
             for rng1 in 1:length(fit_results[dataset]["ranges"])-1
                 for rng2 in rng1+1:length(fit_results[dataset]["ranges"])
                     rng = (rng1, rng2)
-                    append!(list_ec, analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][rng]["neurons"])
+                    append!(list_ec, analysis_dict["encoding_changes_corrected"][dataset][rng]["all"])
                 end
             end
         end
@@ -185,11 +185,12 @@ Exports CePNEM analysis results to JSON file for use on the website.
 # Arguments:
 - `fit_results::Dict`: Dictionary of CePNEM fit results.
 - `analysis_dict::Dict`: Dictionary of CePNEM analysis results.
+- `relative_encoding_strength::Dict`: Dictionary of relative encoding strength values for each neuron.
 - `datasets::Vector{String}`: List of datasets to export.
 - `path_output::String`: Name of JSON file to export to.
 - `path_h5::String`: Path to HDF5 directory containing raw data.
 """
-function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String})
+function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String})
     dict_summary = OrderedDict()    
     @showprogress for dataset = datasets
         if !(dataset in keys(analysis_dict["neuron_categorization"]))
@@ -232,9 +233,9 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, datasets::Vector
             end
             if length(ranges_encoding) > 0
                 dict_dataset["tau_vals"][neuron] = median(fit_results[dataset]["sampled_tau_vals"][ranges_encoding, neuron, :])
-                dict_dataset["rel_enc_str_v"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["v"] for rng=ranges_encoding]...))
-                dict_dataset["rel_enc_str_θh"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["θh"] for rng=ranges_encoding]...))
-                dict_dataset["rel_enc_str_P"][neuron] = median(hcat([analysis_dict["relative_encoding_strength"][dataset][rng][neuron]["P"] for rng=ranges_encoding]...))                
+                dict_dataset["rel_enc_str_v"][neuron] = median(hcat([relative_encoding_strength[dataset][rng][neuron]["v"] for rng=ranges_encoding]...))
+                dict_dataset["rel_enc_str_θh"][neuron] = median(hcat([relative_encoding_strength[dataset][rng][neuron]["θh"] for rng=ranges_encoding]...))
+                dict_dataset["rel_enc_str_P"][neuron] = median(hcat([relative_encoding_strength[dataset][rng][neuron]["P"] for rng=ranges_encoding]...))                
             end
             if length(ranges_encoding_v) > 0
                 dict_dataset["forwardness"][neuron] = median([get_forwardness(analysis_dict["tuning_strength"][dataset][rng][neuron]) for rng=ranges_encoding_v])

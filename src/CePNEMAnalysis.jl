@@ -105,11 +105,11 @@ export
     compute_extrapolated_CePNEM_posterior_stats,
     append_median_CePNEM_fits,
     project_CePNEM_to_UMAP,
+    make_umap_rgb,
     compute_umap_subcategories!,
     # plot.jl
     CET_L13,
     make_deconvolved_heatmap,
-    make_umap_rgb,
     plot_deconvolved_heatmap,
     plot_deconvolved_neural_activity!,
     plot_tsne,

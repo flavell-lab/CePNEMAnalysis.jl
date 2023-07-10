@@ -147,6 +147,7 @@ Calculate the sum of subencodings for each behavior and subcategory.
 # Arguments
 - `fit_results::Dict`: A dictionary containing the results of fitting CePNEM to the data.
 - `analysis_dict::Dict`: A dictionary containing the CePNEM analysis results, specifically the neuron categorization and relative encoding strength.
+- `relative_encoding_strength::Dict`: A dictionary containing the relative encoding strength for each behavior in each neuron.
 - `datasets::Vector{String}`: A vector of strings containing the names of the datasets to analyze.
 - `mode::String`: A string indicating the mode of computation. Possible values are "relative", "encoding", and "sufficient". Default is "relative".
 - `sufficient_threshold::Float64`: A float indicating the threshold for sufficient encoding. Default is 1/3. Does nothing for relative and sufficient modes.
@@ -154,7 +155,7 @@ Calculate the sum of subencodings for each behavior and subcategory.
 # Returns
 - `dict_result::Dict`: A dictionary containing the sum of subencodings for each behavior and subcategory.
 """
-function sum_subencodings(fit_results::Dict, analysis_dict::Dict, datasets::Vector{String}; mode::String="relative", sufficient_threshold::Float64=1/3)
+function sum_subencodings(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, datasets::Vector{String}; mode::String="relative", sufficient_threshold::Float64=1/3)
     dict_result = Dict()
     for dataset in datasets
         for rng=1:length(fit_results[dataset]["ranges"])
@@ -169,11 +170,11 @@ function sum_subencodings(fit_results::Dict, analysis_dict::Dict, datasets::Vect
                     for neuron in analysis_dict["neuron_subcategorization"][dataset][rng][beh][k]
                         val = NaN
                         if mode == "relative"
-                            val = median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh])
+                            val = median(relative_encoding_strength[dataset][rng][neuron][beh])
                         elseif mode == "encoding"
                             val = 1
                         elseif mode == "sufficient"
-                            val = (median(analysis_dict["relative_encoding_strength"][dataset][rng][neuron][beh]) >= sufficient_threshold ? 1 : 0)
+                            val = (median(relative_encoding_strength[dataset][rng][neuron][beh]) >= sufficient_threshold ? 1 : 0)
                         end
                         dict_result[beh][k] += val
                     end

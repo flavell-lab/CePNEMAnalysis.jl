@@ -132,7 +132,7 @@ function get_relative_encoding_strength_mt(fit_results::Dict, dataset::String, r
     model_deconv_θh = zeros(max_idx, max_t)
     model_deconv_P = zeros(max_idx, max_t)
         
-     @sync Threads.@threads for idx=1:max_idx
+    @sync Threads.@threads for idx=1:max_idx
         ps = ps_fit[rng,neuron,idx,1:8]
 
         model_full = model_nl8(max_t, ps..., b_v, b_θh, b_P)

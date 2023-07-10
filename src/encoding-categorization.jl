@@ -611,7 +611,7 @@ end
 """
 get_enc_stats(fit_results::Dict, neuron_p::Dict, P_ranges::Dict; encoding_changes=nothing, P_diff_thresh::Float64=0.5, p::Float64=0.05, rngs_valid=nothing)
 
-Returns a dictionary containing statistics about the encoding categories of neurons across all datasets.
+Returns a tuple containing a dictionary containing statistics about the encoding categories of neurons across all datasets and a list of skipped datasets.
 
 # Arguments:
 - `fit_results::Dict`: CePNEM fit results.
@@ -624,7 +624,7 @@ Returns a dictionary containing statistics about the encoding categories of neur
 # Returns:
 - `result::Dict{String,Dict}`: A dictionary containing statistics about the encoding categories of neurons across all datasets.
 """
-function get_enc_stats(fit_results::Dict, neuron_p::Dict, P_ranges::Dict; P_diff_thresh::Float64=0.5, p::Float64=0.05, rngs_valid=nothing)::Dict{String,Dict}
+function get_enc_stats(fit_results::Dict, neuron_p::Dict, P_ranges::Dict; P_diff_thresh::Float64=0.5, p::Float64=0.05, rngs_valid=nothing)
     result = Dict{String,Dict}()
     list_uid_invalid = String[] # no pumping
     for dataset in keys(fit_results)

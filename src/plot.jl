@@ -291,38 +291,6 @@ function make_deconvolved_heatmap(deconvolved_activity, axis; res=200)
     return all_hmap
 end
 
-"""
-Makes RGB image out of UMAP space.
-
-# Arguments:
-- `feature_imgs`: List of UMAP-projected images showing features of interest.
-- `feature_colors`: List of UMAP-projected images showing colors of interest.
-- `full_umap_img`: List of full UMAP image
-- `color_all`: Background color of full UMAP image
-- `contrast`: Contrast of features vs full UMAP image.
-"""
-function make_umap_rgb(feature_imgs, feature_colors, full_umap_img, color_all, contrast)
-    log_hist_weights = reverse(transpose(log.(1 .+ full_umap_img)), dims=1)
-    log_hist_weight_idx = zeros(length(feature_imgs), reverse(size(full_umap_img))...)
-    for (i,img) in enumerate(feature_imgs)
-        log_hist_weight_idx[i,:,:] .= reverse(transpose(log.(1 .+ img)), dims=1)
-    end
-    max_color = maximum(log_hist_weight_idx)
-    img = zeros(size(log_hist_weights)...,3)
-    img_all = contrast .* log_hist_weights ./ max_color
-    for c=1:3
-        img[:,:,c] .= sum([feature_colors[i][c] .* log_hist_weight_idx[i,:,:] ./ max_color for i=1:length(feature_imgs)])
-    end
-
-    img_color_sum = sum(img, dims=3)
-
-    img_contrast = zeros(size(img))
-    for c=1:3
-        img_contrast[:,:,c] .= (img_color_sum .< img_all) .* img_all .* color_all[c] .+ (img_color_sum .>= img_all) .* img[:,:,c]
-    end
-
-    return img_contrast[:,:,1] .* RGB(1,0,0) .+ img_contrast[:,:,2] .* RGB(0,1,0) .+ img_contrast[:,:,3] .* RGB(0,0,1)
-end
 
 """
 Plots a deconvolved heatmap of the median particle.

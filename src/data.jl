@@ -1,4 +1,9 @@
 """
+    load_CePNEM_output(
+        datasets::Vector{String}, fit_ranges::Dict, path_output, path_h5, n_params, 
+        n_particles, n_samples, is_mcmc; load_posterior::Bool=true
+    )
+
 Loads CePNEM output data.
 
 # Arguments:
@@ -12,7 +17,8 @@ Loads CePNEM output data.
 - `is_mcmc`: Whether fits are done via MCMC (as opposed to SMC)
 - `load_posterior` (optional, default `true`): Whether to load the posterior samples. If `false`, only the fit ranges and traces are loaded.
 """
-function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_output, path_h5, n_params, n_particles, n_samples, is_mcmc; load_posterior::Bool=true)
+function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_output, path_h5, 
+        n_params, n_particles, n_samples, is_mcmc; load_posterior::Bool=true)
     fit_results = Dict()
     incomplete_datasets = Dict()
 
@@ -78,6 +84,8 @@ function load_CePNEM_output(datasets::Vector{String}, fit_ranges::Dict, path_out
 end
 
 """
+    get_pumping_ranges(datasets::Vector{String}, P_ranges::Dict; rngs_valid::Vector{Int}=[1,2])
+
 Computes time ranges with the most pumping variance for each dataset.
 
 # Arguments:
@@ -94,6 +102,8 @@ function get_pumping_ranges(datasets::Vector{String}, P_ranges::Dict; rngs_valid
 end
 
 """
+    add_to_analysis_dict!(analysis_dict::Dict, new_dict::Dict, key::String)
+
 Adds a dictionary of new results to an existing analysis dictionary.
 
 # Arguments:
@@ -111,6 +121,8 @@ function add_to_analysis_dict!(analysis_dict::Dict, new_dict::Dict, key::String)
 end
 
 """
+    compute_signal(fit_results::Dict)
+
 Computes signal value for each neuron in each dataset.
 
 # Arguments:
@@ -129,6 +141,11 @@ function compute_signal(fit_results::Dict)
 end
 
 """
+    neuropal_data_to_dict(
+        fit_results::Dict, analysis_dict::Dict, 
+        list_class::Vector, list_match_dict::Vector, datasets_neuropal::Vector{String}
+    )
+
 Computes match and encoding-change match dictionaries for NeuroPAL data.
 
 # Arguments:
@@ -138,7 +155,8 @@ Computes match and encoding-change match dictionaries for NeuroPAL data.
 - `list_match_dict::Vector{Any}`: List of dictionaries of matches for each class.
 - `datasets_neuropal::Vector{String}`: List of datasets to match.
 """
-function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_class::Vector, list_match_dict::Vector, datasets_neuropal::Vector{String})
+function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, 
+        list_class::Vector, list_match_dict::Vector, datasets_neuropal::Vector{String})
     matches = Dict()
     matches_ec = Dict()
     @showprogress for dataset = datasets_neuropal
@@ -180,6 +198,11 @@ function neuropal_data_to_dict(fit_results::Dict, analysis_dict::Dict, list_clas
 end
 
 """
+    export_to_json(
+        fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, 
+        datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String}
+    )
+
 Exports CePNEM analysis results to JSON file for use on the website.
 
 # Arguments:
@@ -189,8 +212,11 @@ Exports CePNEM analysis results to JSON file for use on the website.
 - `datasets::Vector{String}`: List of datasets to export.
 - `path_output::String`: Name of JSON file to export to.
 - `path_h5::String`: Path to HDF5 directory containing raw data.
+- `list_uid_neuropal::Vector{String}`: List of NeuroPAL datasets.
 """
-function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String})
+function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, 
+        datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String},
+        list_match_dict)
     dict_summary = OrderedDict()    
     @showprogress for dataset = datasets
         if !(dataset in keys(analysis_dict["neuron_categorization"]))

@@ -1,4 +1,9 @@
 """
+    get_CePNEM_fit_score(
+        model_params::Vector{Float64}, neuron_trace::Vector{Float64}, 
+        v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64}
+    )
+
     Compute the CePNEM fit score, which is a measurement of how well the model fit the data.
     Sets the initial condition parameter `y0` to the first timepoint, which enables comparisons of models across time better.
 
@@ -9,7 +14,8 @@
     - `θh::Vector{Float64}`: The worm's head curvature.
     - `P::Vector{Float64}`: The worm's pumping rate.
 """
-function get_CePNEM_fit_score(model_params::Vector{Float64}, neuron_trace::Vector{Float64}, v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64})
+function get_CePNEM_fit_score(model_params::Vector{Float64}, neuron_trace::Vector{Float64}, 
+        v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64})
     cmap = Gen.choicemap()
     cmap[:c_vT] = model_params[1]
     cmap[:c_v] = model_params[2]

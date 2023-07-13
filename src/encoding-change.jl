@@ -284,3 +284,153 @@ function get_enc_change_category(dataset, rngs, neuron, encoding_changes)
 
     return encoding_change
 end
+
+"""
+    compute_feeding_encoding_changes(analysis_dict::Dict, fit_results::Dict, datasets_neuropal_baseline::Vector{String},
+        datasets_neuropal_stim::Vector{string}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
+
+This function computes the feeding encoding changes for a given set of datasets. It takes in the following arguments:
+
+* `analysis_dict::Dict`: A dictionary containing the CePNEM analysis results.
+* `fit_results::Dict`: A dictionary containing the CePNEM fit results.
+* `datasets_neuropal_baseline::Vector{String}`: A list of names of the baseline datasets to use for training.
+* `datasets_neuropal_stim::Vector{string}`: A list of names of the heat-stimulation datasets to use for testing.
+* `stim_times::Dict`: A dictionary containing the stimulation times for each heat-stim dataset.
+* `percent_norm::Real=10`: Fluorescence normalization percentile across datasets (ie: if set at 10, the analysis will use F/F10)
+* `percent_P_thresh::Real=12.5`: Fraction of time points the animal needs  of neurons to threshold based on P-values.
+
+The function returns a dictionary containing the following keys:
+
+* `mse_train`: A dictionary containing the mean squared error (MSE) for each dataset in the training set.
+* `mse_train_null`: A dictionary containing the MSE for the null model for each dataset in the training set.
+* `p_val`: A dictionary containing the P-values for the encoding changes (ie: whether the pre-stimulus model outperformed the post-stimulus model).
+* `mse_prestim`: A dictionary containing the MSE for the prestimulus datasets.
+* `mse_poststim`: A dictionary containing the MSE for the poststimulus datasets.
+* `mse_prestim_null`: A dictionary containing the MSE for the null model on the prestimulus datasets.
+* `mse_poststim_null`: A dictionary containing the MSE for the null model on the poststimulus datasets.
+* `prestim_fits`: A dictionary containing the fit to pumping for the appended prestimulus datasets.
+* `poststim_fits`: A dictionary containing the fit to pumping for the appended poststimulus datasets.
+* `prestim_neurons`: A dictionary containing the appended neural data for the prestimulus datasets.
+* `poststim_neurons`: A dictionary containing the appended neural data for the poststimulus datasets.
+* `prestim_P`: A dictionary containing the appended pumping values for the prestimulus datasets.
+* `poststim_P`: A dictionary containing the appended pumping values for the poststimulus datasets.
+"""
+function compute_feeding_encoding_changes(analysis_dict::Dict, fit_results::Dict, datasets_neuropal_baseline::Vector{String},
+        datasets_neuropal_stim::Vector{string}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
+
+    dict_result = Dict()
+    dict_result["mse_train"] = Dict()
+    dict_result["mse_train_null"] = Dict()
+
+    dict_result["p_val"] = Dict()
+    dict_result["mse_prestim"] = Dict()
+    dict_result["mse_poststim"] = Dict()
+    dict_result["mse_prestim_null"] = Dict()
+    dict_result["mse_poststim_null"] = Dict()
+    dict_result["prestim_fits"] = Dict()
+    dict_result["poststim_fits"] = Dict()
+    dict_result["prestim_neurons"] = Dict()
+    dict_result["poststim_neurons"] = Dict()
+    dict_result["prestim_P"] = Dict()
+    dict_result["poststim_P"] = Dict()
+
+    @showprogress for neuron_name = keys(analysis_dict["matches"])
+        datasets_use = datasets_neuropal_baseline
+
+        P_appended = Float64[]
+        n_appended = Float64[]
+        for (dataset, n) = analysis_dict["matches"][neuron_name]
+            if dataset ∉ datasets_use
+                continue
+            end
+            # need to ensure F/F10 actually produces minimum value
+            if percentile(fit_results[dataset]["P"], percent_P_thresh) > 0
+                continue
+            end
+            append!(P_appended, fit_results[dataset]["P"])
+            if n > size(fit_results[dataset]["trace_original"], 1)
+                @warn("Neuron $neuron_name, dataset $dataset, n $n")
+            end
+            append!(n_appended, fit_results[dataset]["trace_original"][n,:] ./ percentile(fit_results[dataset]["trace_original"][n,:], percent_norm))
+        end
+
+        if length(n_appended) == 0
+            continue
+        end
+
+        # fit GLM model
+        data = DataFrame(P=P_appended, n=n_appended)
+        model = lm(@formula(P ~ n + 1), data)
+
+        y_pred = GLM.predict(model, data)
+
+        dict_result["mse_train"][neuron_name] = mean((P_appended .- y_pred).^2)
+        dict_result["mse_train_null"][neuron_name] = mean((P_appended .- mean(P_appended)).^2)
+
+
+        datasets_fit = datasets_neuropal_stim
+        prestim_neurons = Float64[]
+        prestim_fits = Float64[]
+        prestim_P = Float64[]
+        poststim_neurons = Float64[]
+        poststim_fits = Float64[]
+        poststim_P = Float64[]
+        mse_prestim = Float64[]
+        null_mse_prestim = Float64[]
+        mse_poststim = Float64[]
+        null_mse_poststim = Float64[]
+        for (dataset, n) = analysis_dict["matches"][neuron_name]
+            if dataset ∉ datasets_fit
+                continue
+            end
+            for rng=1:2
+                # need to ensure F/F10 actually produces minimum value on the hypothesized-consistent data range (1)
+                if percentile(fit_results[dataset]["P"][fit_results[dataset]["ranges"][1]], percent_P_thresh*maximum(fit_results[dataset]["ranges"][end])/maximum(fit_results[dataset]["ranges"][1])) > 0
+                    continue
+                end
+                perc = fit_results[dataset]["trace_original"][n,fit_results[dataset]["ranges"][rng]] ./ percentile(fit_results[dataset]["trace_original"][n,:], percent_norm)
+                n_vals = perc
+
+                y_pred = GLM.predict(model, DataFrame(n=n_vals))
+                if rng == 1
+                    push!(mse_prestim, mean((fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]] .- y_pred).^2))
+                    append!(prestim_fits, y_pred)
+                    append!(prestim_neurons, n_vals)
+                    append!(prestim_P, fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]])
+                    push!(null_mse_prestim, mean((fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]] .- mean(P_appended)).^2))
+                elseif rng == 2
+                    push!(mse_poststim, mean((fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]] .- y_pred).^2))
+                    append!(poststim_fits, y_pred)
+                    append!(poststim_neurons, n_vals)
+                    append!(poststim_P, fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]])
+                    push!(null_mse_poststim, mean((fit_results[dataset]["P"][fit_results[dataset]["ranges"][rng]] .- mean(P_appended)).^2))
+                end
+            end
+        end
+
+        if length(mse_prestim) == 0
+            continue
+        end
+
+        prestim = mse_prestim .- null_mse_prestim
+        poststim = mse_poststim .- null_mse_poststim
+        dict_result["mse_prestim"][neuron_name] = mse_prestim
+        dict_result["mse_poststim"][neuron_name] = mse_poststim
+        dict_result["mse_prestim_null"][neuron_name] = null_mse_prestim
+        dict_result["mse_poststim_null"][neuron_name] = null_mse_poststim
+        dict_result["prestim_fits"][neuron_name] = prestim_fits
+        dict_result["poststim_fits"][neuron_name] = poststim_fits
+        dict_result["prestim_neurons"][neuron_name] = prestim_neurons
+        dict_result["poststim_neurons"][neuron_name] = poststim_neurons
+        dict_result["prestim_P"][neuron_name] = prestim_P
+        dict_result["poststim_P"][neuron_name] = poststim_P
+
+        if length(prestim) > 1 && length(poststim) > 1
+            p_val = pvalue(SignedRankTest(prestim, poststim), tail=:left)
+        else
+            p_val = 1.0
+        end
+        dict_result["p_val"][neuron_name] = p_val
+    end
+    return dict_result
+end

@@ -151,5 +151,6 @@ export
     parse_tuning_strength,
     get_random_sample_without_feature,
     # state.jl
-    fit_state_classifier
+    fit_state_classifier,
+    compute_state_neuron_candidates
 end # module

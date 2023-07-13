@@ -186,7 +186,7 @@ function sum_subencodings(fit_results::Dict, analysis_dict::Dict, relative_encod
 end
 
 """
-normalize_subencodings(dict_result::Dict) -> Dict
+    normalize_subencodings(dict_result::Dict) -> Dict
 
 Normalize the subencodings in the given dictionary per behavior. 
 

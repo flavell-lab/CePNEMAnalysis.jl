@@ -1,4 +1,6 @@
 """
+    get_relative_encoding_strength!(ps::Vector{Float64}, b_v::Vector{Float64}, b_θh::Vector{Float64}, b_P::Vector{Float64}; b_null::Union{Vector{Float64}, Nothing}=nothing)
+
 Computes the relative encoding strength of the three behaviors, together with standard deviations of full and deconvolved model fits, for a single CePNEM fit.
 
 # Arguments
@@ -90,6 +92,8 @@ end
 
 
 """
+    get_relative_encoding_strength_mt(fit_results::Dict, dataset::String, rng::Int, neuron::Int; max_idx::Int=10001, dataset_mapping=nothing)
+
 Computes the relative encoding strength of the three behaviors, together with standard deviations of full and deconvolved model fits.
 
 # Arguments
@@ -188,6 +192,8 @@ function get_relative_encoding_strength_mt(fit_results::Dict, dataset::String, r
 end
 
 """
+    get_relative_encoding_strength(fit_results::Dict, datasets::Vector{String}; dataset_mapping=nothing)
+
 Computes the relative encoding strength of all neurons in all datasets.
 
 # Arguments

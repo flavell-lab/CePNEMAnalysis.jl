@@ -1,5 +1,10 @@
 
 """
+    detect_encoding_changes(
+        fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, 
+        relative_encoding_strength, datasets; beh_percent=25
+    )
+
 Detects all neurons with encoding changes in all datasets across all time ranges.
 
 # Arguments
@@ -12,7 +17,8 @@ Detects all neurons with encoding changes in all datasets across all time ranges
 - `relative_encoding_strength`: Relative encoding strength of neurons.
 - `datasets`: Datasets to compute encoding changes for.
 """
-function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, relative_encoding_strength, datasets; beh_percent=25)
+function detect_encoding_changes(fit_results, p, θh_pos_is_ventral, threshold_artifact, rngs, 
+        relative_encoding_strength, datasets; beh_percent=25)
     encoding_changes = Dict()
     encoding_change_p_vals = Dict()
     @showprogress for dataset in datasets
@@ -79,7 +85,9 @@ end
 
 
 """
-Corrects encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
+    correct_encoding_changes(fit_results::Dict, analysis_dict::Dict)
+
+Prunes encoding changes by deleting nonencoding neurons or EWMA-only encoding changes with partially-encoding neurons.
 
 # Arguments:
 - `fit_results::Dict`: Dictionary containing CePNEM fit results.
@@ -134,8 +142,32 @@ function correct_encoding_changes(fit_results::Dict, analysis_dict::Dict)
     return encoding_changes_corrected
 end
 
+"""
+    get_enc_change_stats(
+        fit_results::Dict, enc_change_p::Dict, neuron_p::Dict, datasets::Vector{String};
+        rngs_valid::Union{Nothing,Array{Int,1}}=nothing, p::Float64=0.05
+    )
 
-function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rngs_valid=nothing, p=0.05)
+Returns statistics on encoding changes across datasets.
+
+# Arguments:
+- `fit_results::Dict`: Dictionary containing CePNEM fit results.
+- `enc_change_p::Dict`: Dictionary containing encoding change p-values.
+- `neuron_p::Dict`: Dictionary containing encoding p-values.
+- `datasets::Vector{String}`: List of datasets to analyze.
+- `rngs_valid::Union{Nothing,Array{Int,1}}`: Time ranges to analyze.
+- `p::Float64`: Significance threshold.
+
+# Returns:
+- `n_neurons_tot::Int`: Total number of neurons.
+- `n_neurons_enc_change_all::Int`: Number of encoding changing neurons.
+- `n_neurons_nenc_enc_change::Int`: Number of non-encoding neurons with encoding changes. This should be 0 if you've properly pruned your encoding changes.
+- `n_neurons_enc_change_all::Int`: Number of encoding-changing neurons.
+- `n_neurons_enc_change_beh::Array{Int,1}`: Number of encoding-changing neurons that encode behavior.
+- `dict_enc_change::Dict`: Dictionary containing encoding change statistics.
+- `dict_enc::Dict`: Dictionary containing encoding statistics.
+"""
+function get_enc_change_stats(fit_results::Dict, enc_change_p::Dict, neuron_p::Dict, datasets::Vector{String}; rngs_valid=nothing, p::Float64=0.05)
     n_neurons_tot = 0
     n_neurons_enc = 0
     n_neurons_nenc_enc_change = 0
@@ -190,7 +222,10 @@ function get_enc_change_stats(fit_results, enc_change_p, neuron_p, datasets; rng
     return n_neurons_tot, n_neurons_enc_change_all, n_neurons_enc, n_neurons_nenc_enc_change, n_neurons_enc_change_beh, dict_enc_change, dict_enc
 end
 
-""" Computes summary statistics.
+""" 
+    encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)
+
+Computes summary statistics.
 `function encoding_summary_stats(datasets, enc_stat_dict, dict_enc, dict_enc_change, consistent_neurons)`
 
 `return n_neurons_tot, n_neurons_enc, n_neurons_enc_change, n_neurons_consistent, n_neurons_fully_static,

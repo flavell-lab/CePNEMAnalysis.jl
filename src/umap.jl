@@ -1,5 +1,10 @@
 """
-Makes a distance matrix (compatible with t-SNE) of neurons between multiple datasets.
+    make_distance_matrix(
+        datasets, fit_results, v_ranges, θh_ranges, P_ranges, neuron_categorization; 
+        s_weight=2, v_weight=1, min_P_rng=[0,2], use_all_ranges=false, rngs_valid=nothing
+    )
+
+Makes a distance matrix (compatible with UMAP) of neurons between multiple datasets.
 
 # Arguments:
 - `datasets`: Array of datasets to use.
@@ -111,6 +116,8 @@ end
 
 
 """
+    find_subset_idx(neuron_ids_tsne, neuron_categorization, datasets, rng, beh_category; beh_subcategory="all")
+
 Finds the index in `neuron_ids` of a subset of neurons defined by their behavioral encoding, returns a dictionary with keys being the datasets.
 Calling this function is necessary if you only wish to show a subset of neurons in your t-SNE plot.
 
@@ -154,6 +161,8 @@ end
 
 
 """
+    compute_tsne(distance_matrix, n_tsne, perplexities, n_iters; subset=false, subset_idx=[])
+
 Runs t-SNE algorithm on `distance_matrix`, returns solution with lowest KL-divergence.
 
 # Arguments
@@ -192,6 +201,8 @@ end
 
 
 """
+    extrapolate_behaviors(fit_results, datasets, θh_pos_is_ventral) 
+
 Creates extrapolated behaviors by appending behaviors from individual animals.
 
 # Arguments
@@ -215,6 +226,10 @@ function extrapolate_behaviors(fit_results, datasets, θh_pos_is_ventral)
 end
 
 """
+    compute_extrapolated_CePNEM_posterior_stats(
+        fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true
+    )
+
 Computes statistics of the CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
 
 # Arguments
@@ -266,6 +281,8 @@ function compute_extrapolated_CePNEM_posterior_stats(fit_results, analysis_dict,
 end
 
 """
+    append_median_CePNEM_fits(fit_results, analysis_dict, umap_dict, datasets)
+
 Appends median CePNEM fits together into a single array.
 
 # Arguments
@@ -292,6 +309,8 @@ function append_median_CePNEM_fits(fit_results, analysis_dict, umap_dict, datase
 end
 
 """
+    project_CePNEM_to_UMAP(fit_results, analysis_dict, umap_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true)
+
 Projects median CePNEM fits to UMAP space.
 
 # Arguments
@@ -327,6 +346,8 @@ function project_CePNEM_to_UMAP(fit_results, analysis_dict, umap_dict, datasets,
 end
 
 """
+    make_umap_rgb(feature_imgs, feature_colors, full_umap_img, color_all, contrast)
+
 Makes RGB image out of UMAP space.
 
 # Arguments:
@@ -361,11 +382,17 @@ end
 
 
 """
+    compute_umap_subcategories!(
+        fit_results, analysis_dict, datasets; dataset_cats="2021-05-26-07", 
+        rng_cats=1, ewma_step=5, ewma_max=50, suffix="_median", use_median=false
+    )
+
 Computes UMAP projections for each encoding category.
 
     # Arguments
     - `fit_results`: CePNEM fit results.
     - `analysis_dict`: CePNEM fit analysis results dictionary.
+    - `umap_dict`: UMAP results dictionary.
     - `datasets`: Array of datasets to use.
     - `dataset_cats` (optional, default `"2021-05-26-07"`): Dataset to use for finding encoding categories.
     - `rng_cats` (optional, default `1`): Range to use for finding encoding categories.
@@ -374,7 +401,7 @@ Computes UMAP projections for each encoding category.
     - `suffix` (optional, default `"_median"`): Suffix for extrapolated UMAP key in `analysis_dict`.
     - `use_median` (optional, default `false`): Whether to use median (`true`) or all posterior points (`false`) for extrapolated UMAP projections.
 """
-function compute_umap_subcategories!(fit_results, analysis_dict, datasets; dataset_cats="2021-05-26-07", rng_cats=1, ewma_step=5, ewma_max=50, suffix="_median", use_median=false)
+function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, datasets; dataset_cats="2021-05-26-07", rng_cats=1, ewma_step=5, ewma_max=50, suffix="_median", use_median=false)
     xmin = analysis_dict["umap_xmin"]
     xmax = analysis_dict["umap_xmax"]
     xstep = analysis_dict["umap_xstep"]

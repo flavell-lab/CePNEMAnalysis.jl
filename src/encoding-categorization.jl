@@ -1,7 +1,10 @@
 VALID_V_COMPARISONS = [(1,2), (2,1), (3,4), (4,3)]
 
 """
+    deconvolved_model_nl8(params::Vector{Float64}, v::Float64, θh::Float64, P::Float64)
+
 Evaluate model NL8, deconvolved, given `params` and `v`, `θh`, and `P`. Does not use the sigmoid.
+Expression is equivalent to evaluating NL10d since this function does not include the residual model.
 """
 function deconvolved_model_nl8(params::Vector{Float64}, v::Float64, θh::Float64, P::Float64)
     return ((params[1]+1)/sqrt(params[1]^2+1) - 2*params[1]/sqrt(params[1]^2+1)*(v/v_STD < 0)) * (
@@ -9,6 +12,8 @@ function deconvolved_model_nl8(params::Vector{Float64}, v::Float64, θh::Float64
 end
 
 """
+    compute_range(beh::Vector{Float64}, beh_percent::Real, beh_idx::Int)
+
 Computes the valid range of a behavior `beh` (eg: velocity cropped to a given time range).
 Computes percentile based on `beh_percent`, and uses 4 points instead of 2 for velocity (`beh_idx = 1`)
 """
@@ -30,6 +35,8 @@ function compute_range(beh::Vector{Float64}, beh_percent::Real, beh_idx::Int)
 end
 
 """
+    get_deconvolved_activity(sampled_trace_params, v_rng, θh_rng, P_rng)
+
 Computes deconvolved activity of model NL8 for each sampled parameter in `sampled_trace_params`,
 at a lattice defined by `v_rng`, `θh_rng`, and `P_rng`.
 """
@@ -51,6 +58,8 @@ end
 
 
 """
+    make_deconvolved_lattice(fit_results, beh_percent, plot_thresh; dataset_mapping=nothing)
+
 Makes deconvolved lattices for each dataset, time range, and neuron in `fit_results`.
 Returns velocity, head angle, and pumping ranges, and the deconvolved activity of each neuron at each lattice point defined by them,
 for both statistically useful ranges (first return value), and full ranges (second return value) designed for plotting consistency.
@@ -120,6 +129,11 @@ end
 
 
 """
+    neuron_p_vals(
+        deconvolved_activity_1, deconvolved_activity_2, signal, threshold_artifact::Real, threshold_weak::Real, 
+        relative_encoding_strength; compute_p::Bool=true, metric::Function=abs, stat::Function=median
+    )
+
 Computes neuron p-values by comparing differences between two different deconvolved activities to a threshold.
 (Ie: the p-value of rejecting the null hypothesis that the difference is negative or less than the threshold - 
 if p=0, then we can conclude the neuron has the given activity.)

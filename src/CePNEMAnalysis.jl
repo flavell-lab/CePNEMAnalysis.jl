@@ -137,6 +137,7 @@ export
     # tuning.jl
     get_forwardness,
     get_dorsalness,
+    get_feedingness,
     get_tuning_strength,
     calculate_tuning_strength_per_neuron,
     # decode.jl

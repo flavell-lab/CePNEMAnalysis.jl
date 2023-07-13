@@ -321,6 +321,11 @@ function plot_deconvolved_heatmap(deconvolved_activity, v_ranges_plot, θh_range
 end
 
 """
+    plot_deconvolved_neural_activity!(
+        dataset, rngs, deconvolved_activity_plot, v_ranges_plot, θh_ranges_plot, P_ranges_plot, axis;
+        res=200, plot_size=(700,350), init=true, len=200, pos=[100]
+    )
+
 Plots deconvolved neural activity.
 
 # Arguments:
@@ -531,6 +536,11 @@ function plot_tsne(tsne_dist, fit_results, dataset_ids_tsne, range_ids_tsne, neu
 end
 
 """
+    plot_tau_histogram(
+        fit_results, neuron_categorization; t_max=60, use_cdf=true, 
+        percent=95, rngs_valid=nothing, behavior="all", behavior_subcat="all", label=nothing, legend=:topright
+    )
+
 Plots tau (half-decay) histogram of a single behavior.
 
 # Arguments:
@@ -545,7 +555,8 @@ Plots tau (half-decay) histogram of a single behavior.
 - `label`: Plot label
 - `legend`: Plot legend location
 """
-function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, percent=95, rngs_valid=nothing, behavior="all", behavior_subcat="all", label=nothing, legend=:topright)
+function plot_tau_histogram(fit_results, neuron_categorization; t_max=60, use_cdf=true, 
+        percent=95, rngs_valid=nothing, behavior="all", behavior_subcat="all", label=nothing, legend=:topright)
     s_vals = []
     s_vals_min = []
     s_vals_max = []
@@ -732,7 +743,10 @@ function plot_neuron(fit_results::Dict, dataset::String, rng::Int, neuron::Int; 
     Plots.plot!(xaxis = ("time (min)", (x_rng[1], x_rng[end]), x_rng, font(7, "Arial")),
         yaxis = ("neuron activity (AU)", (y_rng[1], y_rng[end]), y_rng, font(7, "Arial"))), x_rng_plot
 end
+
 """
+    plot_posterior_heatmap!(fit_results, dataset, rng, neuron, param1, param2; init=true, color=palette(:default)[2], x_rng=-3:0.1:3, y_rng=-3:0.1:3, rgb=false)
+
 Plots the heatmap of the projection of posterior particles of a neuron into a 2D susbspace.
 
 # Arguments:
@@ -810,6 +824,8 @@ function plot_posterior_rgb(posterior, x_rng, y_rng, param_x, param_y)
 end
 
 """
+    plot_arrow!(arrow_start::Tuple{Real, Real}, arrow_end::Tuple{Real, Real}, arrow_color::Color, arrow_width::Real, arrow_length::Real)
+
 Plots an arrow from `arrow_start` to `arrow_end` with a given `arrow_color`, `arrow_width`, and `arrow_length`.
 
 # Arguments:
@@ -849,7 +865,7 @@ function color_to_rgba(color::Color, alpha::Real)::Tuple{Float64, Float64, Float
 end
 
 """
-plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
+    plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
 
 Plots a colorbar with a gradient of colors ranging from `rng_min` to `rng_max` with `n_colors` colors. The `other_ticks` argument is a vector of additional ticks to be displayed on the colorbar. The `cmap` argument is a `ColorMap` object that specifies the color scheme to be used. The `n_colors` argument is an `Integer` specifying the number of colors to be used in the gradient. The `figsize` argument is a tuple of two `Real` values that specifies the size of the figure.
 
@@ -877,7 +893,7 @@ function plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, 
 end
 
 """
-get_color_from_palette(value::Real, min_val::Real, max_val::Real, cmap::ColorMap) -> Color
+    get_color_from_palette(value::Real, min_val::Real, max_val::Real, cmap::ColorMap) -> Color
 
 Returns the color corresponding to a given value in a colormap. The colormap is defined by the `cmap` argument, which is a `ColorMap` object. The `value` argument is the value for which the corresponding color is to be found. The `min_val` and `max_val` arguments define the range of values that the colormap spans.
 

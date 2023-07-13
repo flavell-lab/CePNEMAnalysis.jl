@@ -212,7 +212,8 @@ Exports CePNEM analysis results to JSON file for use on the website.
 - `datasets::Vector{String}`: List of datasets to export.
 - `path_output::String`: Name of JSON file to export to.
 - `path_h5::String`: Path to HDF5 directory containing raw data.
-- `list_uid_neuropal::Vector{String}`: List of NeuroPAL datasets.
+- `list_uid_neuropal::Vector{String}`: List of all NeuroPAL datasets, in the order they are computed in `list_match_dict`.
+- `list_match_dict`: List of dictionaries of NeuroPAL data.
 """
 function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, 
         datasets::Vector{String}, path_output::String, path_h5::String, list_uid_neuropal::Vector{String},

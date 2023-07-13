@@ -1,6 +1,8 @@
 """
-    fit_decoder(fit_results::Dict, datasets::Vector, decode_vars::Vector, t_val::Vector, λ_dict::Dict;
-                traces_use::Union{Nothing, Dict}=nothing, v_condition::String="all")
+    fit_decoder(
+        fit_results::Dict, datasets::Vector, decode_vars::Vector, t_val::Vector, λ_dict::Dict;
+        traces_use::Union{Nothing, Dict}=nothing, v_condition::String="all"
+    )
 
 Fit a decoder to predict the values of `decode_vars` from the neural traces in `fit_results` using L1-regularized linear regression.
 

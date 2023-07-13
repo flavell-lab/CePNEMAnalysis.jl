@@ -4,15 +4,15 @@
         v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64}
     )
 
-    Compute the CePNEM fit score, which is a measurement of how well the model fit the data.
-    Sets the initial condition parameter `y0` to the first timepoint, which enables comparisons of models across time better.
+Compute the CePNEM fit score, which is a measurement of how well the model fit the data.
+Sets the initial condition parameter `y0` to the first timepoint, which enables comparisons of models across time better.
 
-    # Arguments:
-    - `model_params::Vector{Float64}`: The model parameters to use.
-    - `neuron_trace::Vector{Float64}`: The neuron trace to fit.
-    - `v::Vector{Float64}`: The worm's velocity.
-    - `θh::Vector{Float64}`: The worm's head curvature.
-    - `P::Vector{Float64}`: The worm's pumping rate.
+# Arguments:
+- `model_params::Vector{Float64}`: The model parameters to use.
+- `neuron_trace::Vector{Float64}`: The neuron trace to fit.
+- `v::Vector{Float64}`: The worm's velocity.
+- `θh::Vector{Float64}`: The worm's head curvature.
+- `P::Vector{Float64}`: The worm's pumping rate.
 """
 function get_CePNEM_fit_score(model_params::Vector{Float64}, neuron_trace::Vector{Float64}, 
         v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64})
@@ -33,14 +33,16 @@ function get_CePNEM_fit_score(model_params::Vector{Float64}, neuron_trace::Vecto
 end
 
 """
-    Sample a random set of parameters from the CePNEM prior and compute the model score on the observed data.
-    Sets the initial condition parameter `y0` to the first timepoint, which enables comparisons of models across time better.
+    get_CePNEM_prior_score(neuron_trace::Vector{Float64}, v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64})
 
-    # Arguments:
-    - `neuron_trace::Vector{Float64}`: The neuron trace to fit.
-    - `v::Vector{Float64}`: The worm's velocity.
-    - `θh::Vector{Float64}`: The worm's head curvature.
-    - `P::Vector{Float64}`: The worm's pumping rate.
+Sample a random set of parameters from the CePNEM prior and compute the model score on the observed data.
+Sets the initial condition parameter `y0` to the first timepoint, which enables comparisons of models across time better.
+
+# Arguments:
+- `neuron_trace::Vector{Float64}`: The neuron trace to fit.
+- `v::Vector{Float64}`: The worm's velocity.
+- `θh::Vector{Float64}`: The worm's head curvature.
+- `P::Vector{Float64}`: The worm's pumping rate.
 """
 function get_CePNEM_prior_score(neuron_trace::Vector{Float64}, v::Vector{Float64}, θh::Vector{Float64}, P::Vector{Float64})
     cmap = Gen.choicemap()
@@ -51,14 +53,16 @@ function get_CePNEM_prior_score(neuron_trace::Vector{Float64}, v::Vector{Float64
 end
 
 """
-    Sample a random set of parameters from the CePNEM fitted posterior and compute the model score on the observed data.
+    get_CePNEM_full_posterior_score(full_posterior, neuron_trace, v, θh, P)
+    
+Sample a random set of parameters from the CePNEM fitted posterior and compute the model score on the observed data.
 
-    # Arguments:
-    - `full_posterior::Vector{Vector{Float64}}`: The full posterior distribution of the model parameters.
-    - `neuron_trace::Vector{Float64}`: The neuron trace to fit.
-    - `v::Vector{Float64}`: The worm's velocity.
-    - `θh::Vector{Float64}`: The worm's head curvature.
-    - `P::Vector{Float64}`: The worm's pumping rate.
+# Arguments:
+- `full_posterior::Vector{Vector{Float64}}`: The full posterior distribution of the model parameters.
+- `neuron_trace::Vector{Float64}`: The neuron trace to fit.
+- `v::Vector{Float64}`: The worm's velocity.
+- `θh::Vector{Float64}`: The worm's head curvature.
+- `P::Vector{Float64}`: The worm's pumping rate.
 """
 function get_CePNEM_full_posterior_score(full_posterior, neuron_trace, v, θh, P)
     model_params = [rand(full_posterior[i]) for i = 1:11]
@@ -67,11 +71,13 @@ end
 
 
 """
-    Compute the Bayesian Generalization Index (BGI) of the model, using fractional overperformance relative to the prior as the metric.
+    compute_BGI(test_score, prior_score)
 
-    # Arguments:
-    - `test_score::Vector{Float64}`: The model scores on the test data.
-    - `prior_score::Vector{Float64}`: The model scores on the prior data.
+Compute the Bayesian Generalization Index (BGI) of the model, using fractional overperformance relative to the prior as the metric.
+
+# Arguments:
+- `test_score::Vector{Float64}`: The model scores on the test data.
+- `prior_score::Vector{Float64}`: The model scores on the prior data.
 """
 function compute_BGI(test_score, prior_score)
     return 2 * prob_P_greater_Q(test_score, prior_score) - 1

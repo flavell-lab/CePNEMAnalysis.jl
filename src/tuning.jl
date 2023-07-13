@@ -1,20 +1,26 @@
 """
-    Helper function to calculate tuning strength for a given neuron.
+    calculate_tuning_strength_per_neuron(
+        neuron_deconv, relative_encoding_strength, signal, v_range, θh_range, P_range,
+        θh_pos_is_ventral; stat::Function=median, zero_da=nothing
+    )
 
-    Args:
-    `neuron_deconv`: Deconvolved neural activity.
-    `zero_da`: Zero deconvolved activity array.
-    `relative_encoding_strength`: 
-    `signal`: Signal value for the current neuron.
-    `v_range`: Range 
-    `θh_range`: Difference between θh_ranges.
-    `P_range`: Difference between P_ranges.
-    `θh_pos_is_ventral`: Boolean indicating if θh_pos is ventral.
+Helper function to calculate tuning strength for a given neuron.
 
-    Returns:
-    A Dict containing tuning strength values for the neuron.
+Args:
+`neuron_deconv`: Deconvolved neural activity.
+`zero_da`: Zero deconvolved activity array.
+`relative_encoding_strength`: 
+`signal`: Signal value for the current neuron.
+`v_range`: Range 
+`θh_range`: Difference between θh_ranges.
+`P_range`: Difference between P_ranges.
+`θh_pos_is_ventral`: Boolean indicating if θh_pos is ventral.
+
+Returns:
+A Dict containing tuning strength values for the neuron.
 """
-function calculate_tuning_strength_per_neuron(neuron_deconv, relative_encoding_strength, signal, v_range, θh_range, P_range, θh_pos_is_ventral; stat::Function=median, zero_da=nothing)
+function calculate_tuning_strength_per_neuron(neuron_deconv, relative_encoding_strength, signal, 
+        v_range, θh_range, P_range, θh_pos_is_ventral; stat::Function=median, zero_da=nothing)
     if isnothing(zero_da)
         zero_da = zeros(size(neuron_deconv))
     end
@@ -153,7 +159,7 @@ function get_tuning_strength(fit_results::Dict, deconvolved_activity::Dict, rela
 end
 
 """
-get_forwardness(tuning_strength::Dict)
+    get_forwardness(tuning_strength::Dict)
 
 Given tuning strength values for a given neuron, returns the forwardness of that neuron.
 
@@ -168,7 +174,7 @@ function get_forwardness(tuning_strength)
 end
 
 """
-get_dorsalness(tuning_strength::Dict)
+    get_dorsalness(tuning_strength::Dict)
 
 Given tuning strength values for a given neuron, returns the dorsalness of that neuron.
 
@@ -180,4 +186,19 @@ The dorsalness of the neuron.
 """
 function get_dorsalness(tuning_strength)
     return tuning_strength["θh_dorsal"]
+end
+
+"""
+    get_feedingness(tuning_strength::Dict)
+
+Given tuning strength values for a given neuron, returns the feedingness of that neuron.
+
+Arguments:
+- `tuning_strength::Dict`: A dictionary containing the tuning strength values for a given neuron.
+
+Returns:
+The feedingness of the neuron.
+"""
+function get_feedingness(tuning_strength)
+    return tuning_strength["P_pos"]
 end

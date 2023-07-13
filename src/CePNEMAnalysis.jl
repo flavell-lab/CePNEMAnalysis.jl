@@ -25,6 +25,7 @@ using FlavellConstants
 using ANTSUNData
 using Clustering
 using DataStructures
+using HypothesisTests
 
 include("bgi.jl")
 include("data.jl")
@@ -91,6 +92,7 @@ export
     get_enc_change_cat_p_vals_dataset,
     get_enc_change_category,
     MSE_correct_encoding_changes,
+    compute_feeding_encoding_changes,
     # mse.jl
     idx_splitify_rng,
     generate_reg_L2_nl10d,

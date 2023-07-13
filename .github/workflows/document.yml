@@ -1,0 +1,70 @@
+name: Documentation
+  
+on:
+  push:
+    branches:
+      - main
+    tags: '*'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.9.2'
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/FlavellBase.jl
+          path: ./FlavellBase.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/EncoderModel.jl
+          path: ./EncoderModel.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/FlavellConstants.jl
+          path: ./FlavellConstants.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/CePNEM.jl
+          path: ./CePNEM.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/ANTSUNData.jl
+          path: ./ANTSUNData.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          repository: flavell-lab/AnalysisBase.jl
+          path: ./AnalysisBase.jl
+          token: ${{ secrets.GOLDENRATIO1618_ACCESS_TOKEN }}
+      - name: Install Julia Python environment
+        run: julia --project=docs/ -e 'using Pkg; 
+          Pkg.add("PyCall");
+          ENV["PYTHON"] = "";
+          Pkg.build("PyCall");
+          Pkg.add("PyPlot");
+          Pkg.build("PyPlot");'
+      - name: Install matplotlib
+        run: ~/.julia/conda/3/x86_64/bin/pip install matplotlib
+      - name: Install packages
+        run: julia --project=docs/ -e 'using Pkg;
+          Pkg.add(PackageSpec(path="./FlavellBase.jl"));
+          Pkg.add(PackageSpec(path="./FlavellConstants.jl"));
+          Pkg.add(PackageSpec(path="./ANTSUNData.jl"));
+          Pkg.add(PackageSpec(path="./AnalysisBase.jl")); 
+          Pkg.add(PackageSpec(path="./EncoderModel.jl")); 
+          Pkg.add(PackageSpec(path="./CePNEM.jl")); 
+          Pkg.add(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: Build and deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
+        run: julia --project=docs/ docs/make.jl

@@ -287,7 +287,7 @@ end
 
 """
     compute_feeding_encoding_changes(analysis_dict::Dict, fit_results::Dict, datasets_neuropal_baseline::Vector{String},
-        datasets_neuropal_stim::Vector{string}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
+        datasets_neuropal_stim::Vector{String}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
 
 This function computes the feeding encoding changes for a given set of datasets. It takes in the following arguments:
 
@@ -316,7 +316,7 @@ The function returns a dictionary containing the following keys:
 * `poststim_P`: A dictionary containing the appended pumping values for the poststimulus datasets.
 """
 function compute_feeding_encoding_changes(analysis_dict::Dict, fit_results::Dict, datasets_neuropal_baseline::Vector{String},
-        datasets_neuropal_stim::Vector{string}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
+        datasets_neuropal_stim::Vector{String}, stim_times::Dict; percent_norm::Real=10, percent_P_thresh::Real=12.5)
 
     dict_result = Dict()
     dict_result["mse_train"] = Dict()

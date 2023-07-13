@@ -215,22 +215,34 @@ function extrapolate_behaviors(fit_results, datasets, θh_pos_is_ventral)
 end
 
 """
-Computes median CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
+Computes statistics of the CePNEM fits of all neurons in each dataset across the set of extrapolated behaviors.
 
 # Arguments
+- `fit_results`: CePNEM fit results.
 - `analysis_dict`: CePNEM fit analysis results dictionary.
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
+- `use_pumping` (optional, default `true`): Whether to use pumping in CePNEM fits.
+- `normalize` (optional, default `true`): Whether to normalize CePNEM fits by signal value.
+
+# Returns
+- `median_CePNEM_fits`: Median of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
+- `mean_CePNEM_fits`: Mean of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
+- `var_CePNEM_fits`: Variance of the CePNEM fits of each neurons in each dataset across the set of extrapolated behaviors.
 """
-function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
+function compute_extrapolated_CePNEM_posterior_stats(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true, normalize=true)
     median_CePNEM_fits = Dict()
+    mean_CePNEM_fits = Dict()
+    var_CePNEM_fits = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
         if dataset in keys(median_CePNEM_fits)
             continue
         end
-        median_CePNEM_fits[dataset] = zeros(2, fit_results[dataset]["num_neurons"], size(all_behs,1))
+        median_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
+        mean_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
+        var_CePNEM_fits[dataset] = zeros(length(fit_results[dataset]["ranges"]), fit_results[dataset]["num_neurons"], size(all_behs,1))
         for rng = 1:length(fit_results[dataset]["ranges"])
             for neuron = 1:fit_results[dataset]["num_neurons"]
                 extrap = zeros(size(all_behs,1), n_idx)
@@ -238,14 +250,19 @@ function compute_median_CePNEM_fits(analysis_dict, datasets, θh_pos_is_ventral;
                     ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,idx,1:8])
                     ps[3] = ps[3] * (2*θh_pos_is_ventral[dataset]-1)
                     ps[6] = 0
-                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
-                    extrap[:,idx] .= (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
+                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], (use_pumping ? all_behs[:,3] : zeros(length(all_behs[:,3]))))
+                    if normalize
+                        model = (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
+                    end
+                    extrap[:,idx] .= model
                 end
                 median_CePNEM_fits[dataset][rng,neuron,:] .= median(extrap, dims=2)[:,1]
+                mean_CePNEM_fits[dataset][rng,neuron,:] .= mean(extrap, dims=2)[:,1]
+                var_CePNEM_fits[dataset][rng,neuron,:] .= var(extrap, dims=2)[:,1]
             end
         end
     end
-    return median_CePNEM_fits
+    return median_CePNEM_fits, mean_CePNEM_fits, var_CePNEM_fits
 end
 
 """
@@ -253,19 +270,20 @@ Appends median CePNEM fits together into a single array.
 
 # Arguments
 - `fit_results`: CePNEM fit results.
-- `analysis_dict`: CePNEM fit analysis results dictionary.
+- `analysis_dict`: CePNEM fit analysis results dictionary containing the `extrapolated_behaviors` key.
+- `umap_dict`: UMAP results dictionary containing the `median_CePNEM_fits` key.
 - `datasets`: Array of datasets to use.
 """
-function append_median_CePNEM_fits(fit_results, analysis_dict, datasets)
+function append_median_CePNEM_fits(fit_results, analysis_dict, umap_dict, datasets)
     median_CePNEM_fits_all = zeros(2*sum([fit_results[d]["num_neurons"] for d in datasets]), size(analysis_dict["extrapolated_behaviors"], 1))
     count = 1
     for dataset in datasets
-        if !(dataset in keys(analysis_dict["median_CePNEM_fits"]))
+        if !(dataset in keys(umap_dict["median_CePNEM_fits"]))
             error("Dataset $(dataset) did not have median computed")
         end
         for rng=1:length(fit_results[dataset]["ranges"])
             for neuron=1:fit_results[dataset]["num_neurons"]
-                median_CePNEM_fits_all[count,:] .= analysis_dict["median_CePNEM_fits"][dataset][rng,neuron,:]
+                median_CePNEM_fits_all[count,:] .= umap_dict["median_CePNEM_fits"][dataset][rng,neuron,:]
                 count += 1
             end
         end
@@ -279,11 +297,13 @@ Projects median CePNEM fits to UMAP space.
 # Arguments
 - `fit_results`: CePNEM fit results.
 - `analysis_dict`: CePNEM fit analysis results dictionary.
+- `umap_dict`: UMAP results dictionary containing the `extrapolated_umap_median` key.
 - `datasets`: Array of datasets to use.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `n_idx` (optional, default `10001`): Number of particles in CePNEM fits.
+- `use_pumping` (optional, default `true`): Whether to use pumping in the model.
 """
-function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is_ventral; n_idx=10001)
+function project_CePNEM_to_UMAP(fit_results, analysis_dict, umap_dict, datasets, θh_pos_is_ventral; n_idx=10001, use_pumping=true)
     umap_extrap_all_median = Dict()
     all_behs = analysis_dict["extrapolated_behaviors"]
     @showprogress for dataset = datasets
@@ -296,15 +316,49 @@ function project_CePNEM_to_UMAP(fit_results, analysis_dict, datasets, θh_pos_is
                     ps = deepcopy(fit_results[dataset]["sampled_trace_params"][rng,neuron,idx,1:8])
                     ps[3] = ps[3] * (2*θh_pos_is_ventral[dataset]-1)
                     ps[6] = 0
-                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], all_behs[:,3])
+                    model = model_nl8(size(all_behs,1), ps..., all_behs[:,1], all_behs[:,2], (use_pumping ? all_behs[:,3] : zeros(length(all_behs[:,3]))))
                     extrap[:,idx] .= (model .- mean(model)) .* analysis_dict["signal"][dataset][neuron]
                 end
-                umap_extrap_all_median[dataset][rng][neuron] = UMAP.transform(analysis_dict["extrapolated_umap_median"], extrap)
+                umap_extrap_all_median[dataset][rng][neuron] = UMAP.transform(umap_dict["extrapolated_umap_median"], extrap)
             end
         end
     end
     return umap_extrap_all_median
 end
+
+"""
+Makes RGB image out of UMAP space.
+
+# Arguments:
+- `feature_imgs`: List of UMAP-projected images showing features of interest.
+- `feature_colors`: List of UMAP-projected images showing colors of interest.
+- `full_umap_img`: List of full UMAP image
+- `color_all`: Background color of full UMAP image
+- `contrast`: Contrast of features vs full UMAP image.
+"""
+function make_umap_rgb(feature_imgs, feature_colors, full_umap_img, color_all, contrast)
+    log_hist_weights = reverse(transpose(log.(1 .+ full_umap_img)), dims=1)
+    log_hist_weight_idx = zeros(length(feature_imgs), reverse(size(full_umap_img))...)
+    for (i,img) in enumerate(feature_imgs)
+        log_hist_weight_idx[i,:,:] .= reverse(transpose(log.(1 .+ img)), dims=1)
+    end
+    max_color = maximum(log_hist_weight_idx)
+    img = zeros(size(log_hist_weights)...,3)
+    img_all = contrast .* log_hist_weights ./ max_color
+    for c=1:3
+        img[:,:,c] .= sum([feature_colors[i][c] .* log_hist_weight_idx[i,:,:] ./ max_color for i=1:length(feature_imgs)])
+    end
+
+    img_color_sum = sum(img, dims=3)
+
+    img_contrast = zeros(size(img))
+    for c=1:3
+        img_contrast[:,:,c] .= (img_color_sum .< img_all) .* img_all .* color_all[c] .+ (img_color_sum .>= img_all) .* img[:,:,c]
+    end
+
+    return img_contrast[:,:,1] .* RGB(1,0,0) .+ img_contrast[:,:,2] .* RGB(0,1,0) .+ img_contrast[:,:,3] .* RGB(0,0,1)
+end
+
 
 """
 Computes UMAP projections for each encoding category.

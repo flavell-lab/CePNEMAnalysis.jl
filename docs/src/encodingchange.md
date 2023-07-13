@@ -1,0 +1,1 @@
+# Encoding change detection API

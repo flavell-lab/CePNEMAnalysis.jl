@@ -14,7 +14,7 @@ function cluster_dist(clusters)
     return distances
 end
 
-function dendrocolor(dg, clusters, colors; progenitors=nothing, k=nothing)
+function dendrocolor!(dg, clusters, colors; progenitors=nothing, k=nothing)
     @assert(!(isnothing(progenitors) && isnothing(k)), "Must specify either progenitor or k coloring.")
     n = length(clusters.order)
     

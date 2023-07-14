@@ -392,7 +392,7 @@ Computes UMAP projections for each encoding category.
     # Arguments
     - `fit_results`: CePNEM fit results.
     - `analysis_dict`: CePNEM fit analysis results dictionary.
-    - `umap_dict`: UMAP results dictionary.
+    - `umap_dict`: UMAP results dictionary. Modified in-place by this function.
     - `datasets`: Array of datasets to use.
     - `dataset_cats` (optional, default `"2021-05-26-07"`): Dataset to use for finding encoding categories.
     - `rng_cats` (optional, default `1`): Range to use for finding encoding categories.

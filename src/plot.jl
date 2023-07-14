@@ -865,14 +865,14 @@ function color_to_rgba(color::Color, alpha::Real)::Tuple{Float64, Float64, Float
 end
 
 """
-    plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
+    plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
 
 Plots a colorbar with a gradient of colors ranging from `rng_min` to `rng_max` with `n_colors` colors. The `other_ticks` argument is a vector of additional ticks to be displayed on the colorbar. The `cmap` argument is a `ColorMap` object that specifies the color scheme to be used. The `n_colors` argument is an `Integer` specifying the number of colors to be used in the gradient. The `figsize` argument is a tuple of two `Real` values that specifies the size of the figure.
 
 # Arguments:
 - `rng_min::Real`: The minimum value of the range of values to be displayed on the colorbar.
 - `rng_max::Real`: The maximum value of the range of values to be displayed on the colorbar.
-- `other_ticks::Vector{Real}`: A vector of additional ticks to be displayed on the colorbar.
+- `other_ticks::Vector`: A vector of additional ticks to be displayed on the colorbar.
 - `cmap::ColorMap`: A `ColorMap` object that specifies the color scheme to be used.
 - `n_colors::Integer`: The number of colors to be used in the gradient.
 - `figsize::Tuple{Real, Real}`: A tuple of two `Real` values that specifies the size of the figure.
@@ -880,7 +880,7 @@ Plots a colorbar with a gradient of colors ranging from `rng_min` to `rng_max` w
 # Returns:
 - Nothing. The function is called for its side effects of plotting the colorbar.
 """
-function plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector{Real}, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
+function plot_colorbar(rng_min::Real, rng_max::Real, other_ticks::Vector, cmap::ColorMap, n_colors::Integer, figsize::Tuple{Real, Real})
     # Create an array with the range of input values for the colormap
     gradient = reshape(range(rng_min, stop=rng_max, length=n_colors), 1, n_colors)
 

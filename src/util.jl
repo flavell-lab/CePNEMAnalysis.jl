@@ -47,7 +47,7 @@ function correct_name(neuron_name::String)
 end
 
 """
-find_peaks(neural_activity::Vector{Float64}, threshold::Float64)
+    find_peaks(neural_activity::Vector{Float64}, threshold::Float64)
 
 Find the peaks in a vector of neural activity above a given threshold.
 This method is most useful for finding spikes in the activity of spiking neurons.
@@ -229,6 +229,17 @@ function get_frac_responding(neurons::Vector{String}, responses::Dict{String, An
     return (n_responding == 0) ? 0.0 : n_responding / n_tot
 end
 
+"""
+    get_subcats(beh)
+
+Get the subcategories of a given behavior.
+
+# Arguments:
+- `beh::String`: A string representing the behavior.
+
+# Returns:
+- `subcats::Vector{Tuple{String, String}}`: A vector of tuples representing the subcategories of the behavior.
+"""
 function get_subcats(beh)
     if beh == "v"
         subcats = [("rev_slope_neg", "rev_slope_pos"), ("rev", "fwd"), ("rect_neg", "rect_pos"), ("fwd_slope_neg", "fwd_slope_pos")]

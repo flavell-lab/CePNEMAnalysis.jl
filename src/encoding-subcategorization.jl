@@ -140,7 +140,10 @@ function subcategorize_all_neurons!(fit_results::Dict, analysis_dict::Dict, data
 end
 
 """
-    sum_subencodings(fit_results, analysis_dict, datasets; mode="relative", sufficient_threshold=1/3)
+    sum_subencodings(
+        fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict,
+        datasets::Vector{String}; mode::String="relative", sufficient_threshold::Float64=1/3
+    )
 
 Calculate the sum of subencodings for each behavior and subcategory.
 

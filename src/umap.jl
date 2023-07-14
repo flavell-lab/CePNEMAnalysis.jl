@@ -383,7 +383,7 @@ end
 
 """
     compute_umap_subcategories!(
-        fit_results, analysis_dict, datasets; dataset_cats="2021-05-26-07", 
+        fit_results, analysis_dict, umap_dict, datasets; dataset_cats="2021-05-26-07", 
         rng_cats=1, ewma_step=5, ewma_max=50, suffix="_median", use_median=false
     )
 
@@ -402,15 +402,15 @@ Computes UMAP projections for each encoding category.
     - `use_median` (optional, default `false`): Whether to use median (`true`) or all posterior points (`false`) for extrapolated UMAP projections.
 """
 function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, datasets; dataset_cats="2021-05-26-07", rng_cats=1, ewma_step=5, ewma_max=50, suffix="_median", use_median=false)
-    xmin = analysis_dict["umap_xmin"]
-    xmax = analysis_dict["umap_xmax"]
-    xstep = analysis_dict["umap_xstep"]
+    xmin = umap_dict["umap_xmin"]
+    xmax = umap_dict["umap_xmax"]
+    xstep = umap_dict["umap_xstep"]
     
-    ymin = analysis_dict["umap_ymin"]
-    ymax = analysis_dict["umap_ymax"]
-    ystep = analysis_dict["umap_ystep"]
-    xaxis = analysis_dict["umap_xaxis"]
-    yaxis = analysis_dict["umap_yaxis"]
+    ymin = umap_dict["umap_ymin"]
+    ymax = umap_dict["umap_ymax"]
+    ystep = umap_dict["umap_ystep"]
+    xaxis = umap_dict["umap_xaxis"]
+    yaxis = umap_dict["umap_yaxis"]
     
     hist_weights = zeros(length(xaxis)-1, length(yaxis)-1)
     
@@ -442,9 +442,9 @@ function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, data
         for rng = 1:length(fit_results[dataset]["ranges"])
             for neuron = 1:fit_results[dataset]["num_neurons"]
                 if use_median
-                    hist_fit = fit(Histogram, ([median(analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:])], [median(analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:])]), (xaxis, yaxis))
+                    hist_fit = fit(Histogram, ([median(umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:])], [median(analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:])]), (xaxis, yaxis))
                 else
-                    hist_fit = fit(Histogram, (analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
+                    hist_fit = fit(Histogram, (umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
                 end
                 
                 for k_beh in keys(analysis_dict["neuron_categorization"][dataset][rng])
@@ -467,9 +467,9 @@ function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, data
                     end
                 end
 
-                for idx = 1:size(analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron],2)
-                    loc_x = Int((analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,idx] - xmin) ÷ xstep + 1)
-                    loc_y = Int((analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,idx] - ymin) ÷ ystep + 1)
+                for idx = 1:size(umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron],2)
+                    loc_x = Int((umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,idx] - xmin) ÷ xstep + 1)
+                    loc_y = Int((umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,idx] - ymin) ÷ ystep + 1)
                     ewma_val = Int(min(ewma_max, fit_results[dataset]["sampled_tau_vals"][rng, neuron, idx]) ÷ ewma_step) + 1
                     hist_weights_ewma[ewma_val, loc_x, loc_y] += 1
                 end 
@@ -479,126 +479,10 @@ function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, data
         end    
     end
     
-    analysis_dict["umap_hist_weights$(suffix)"] = hist_weights
-    analysis_dict["umap_hist_weights_cats$(suffix)"] = hist_weights_cats
-    analysis_dict["umap_hist_weights_subcats$(suffix)"] = hist_weights_subcats
-    analysis_dict["umap_hist_weights_ewma$(suffix)"] = hist_weights_ewma;
+    umap_dict["umap_hist_weights$(suffix)"] = hist_weights
+    umap_dict["umap_hist_weights_cats$(suffix)"] = hist_weights_cats
+    umap_dict["umap_hist_weights_subcats$(suffix)"] = hist_weights_subcats
+    umap_dict["umap_hist_weights_ewma$(suffix)"] = hist_weights_ewma;
 
-    if use_median
-        print("Using median; skipping encoding change projection.")
-        return nothing
-    end
-    
-    analysis_dict["enc_change_stats_baseline"] = Dict()    
-    analysis_dict["enc_change_stats_heatstim"] = Dict()
-    analysis_dict["enc_change_stats_baseline_dataset"] = Dict()    
-    analysis_dict["enc_change_stats_heatstim_dataset"] = Dict()
-    hist_weights_cats_ec["baseline"] = Dict()
-    hist_weights_cats_ec["heatstim"] = Dict()
-    
-    @showprogress for dataset = datasets
-        if !(dataset in keys(analysis_dict["encoding_changing_neurons_msecorrect_mh"]))
-            @warn("Could not find $dataset in encoding_changing_neurons_msecorrect_mh")
-            continue
-        end
-        dict_stats = nothing
-        dict_stats_dataset = nothing
-        hist_weights_dict = nothing
-        if dataset in datasets_baseline_1600
-            dict_stats = analysis_dict["enc_change_stats_baseline"]
-            dict_stats_dataset = analysis_dict["enc_change_stats_baseline_dataset"]
-            hist_weights_dict = hist_weights_cats_ec["baseline"]
-        elseif dataset in datasets_stim_all
-            dict_stats = analysis_dict["enc_change_stats_heatstim"]
-            dict_stats_dataset = analysis_dict["enc_change_stats_heatstim_dataset"]
-            hist_weights_dict = hist_weights_cats_ec["heatstim"]
-        end
-        hist_weights_cats_ec[dataset] = Dict()
-        if !isnothing(dict_stats_dataset)
-            dict_stats_dataset[dataset] = Dict()
-        end
-        for rngs = keys(analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset])
-            if !isnothing(dict_stats) && !(rngs in keys(dict_stats))
-                dict_stats[rngs] = Dict()
-                hist_weights_dict[rngs] = Dict()
-            end
-            hist_weights_cats_ec[dataset][rngs] = Dict()
-            if !isnothing(dict_stats_dataset)
-                dict_stats_dataset[dataset][rngs] = Dict()
-            end
-            for cat = keys(analysis_dict["encoding_changes"][dataset][rngs])
-                hist_weights_cats_ec[dataset][rngs][cat] = Dict()
-                if typeof(analysis_dict["encoding_changes"][dataset][rngs][cat]) <: Dict
-                    if !isnothing(dict_stats_dataset)
-                        dict_stats_dataset[dataset][rngs][cat] = Dict()
-                    end
-                    for subcat = keys(analysis_dict["encoding_changes"][dataset][rngs][cat])
-                        
-                        hist_weights_cats_ec[dataset][rngs][cat][subcat] = Dict()
-                        if !isnothing(dict_stats_dataset)
-                            dict_stats_dataset[dataset][rngs][cat][subcat] = 0
-                        end
-                        if !isnothing(dict_stats) && !(cat in keys(dict_stats[rngs]))
-                            dict_stats[rngs][cat] = Dict()
-                            hist_weights_dict[rngs][cat] = Dict()
-                        end
-                        if !isnothing(dict_stats) && !(subcat in keys(dict_stats[rngs][cat]))
-                            dict_stats[rngs][cat][subcat] = 0
-                            hist_weights_dict[rngs][cat][subcat] = Dict()
-                        end
-                        for rng = 1:length(fit_results[dataset]["ranges"])                            
-                            if !isnothing(hist_weights_dict) && !(rng in keys(hist_weights_dict[rngs][cat][subcat]))
-                                hist_weights_dict[rngs][cat][subcat][rng] = zeros(length(xaxis)-1, length(yaxis)-1)
-                            end
-                            hist_weights_cats_ec[dataset][rngs][cat][subcat][rng] = zeros(length(xaxis)-1, length(yaxis)-1)
-                            for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat][subcat]
-                                if !(neuron in analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][rngs]["neurons"])
-                                    continue
-                                end
-                                hist_fit = fit(Histogram, (analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
-                                hist_weights_cats_ec[dataset][rngs][cat][subcat][rng] .+= hist_fit.weights
-                                if !isnothing(hist_weights_dict)
-                                    hist_weights_dict[rngs][cat][subcat][rng] .+= hist_fit.weights
-                                end
-                                if !isnothing(dict_stats) && rng == 1
-                                    dict_stats[rngs][cat][subcat] += 1
-                                    dict_stats_dataset[dataset][rngs][cat][subcat] += 1
-                                end
-                            end
-                        end
-                    end
-                else
-                    if !isnothing(dict_stats_dataset)
-                        dict_stats_dataset[dataset][rngs][cat] = 0
-                    end
-                    if !isnothing(dict_stats) && !(cat in keys(dict_stats[rngs]))
-                        dict_stats[rngs][cat] = 0
-                        hist_weights_dict[rngs][cat] = Dict()
-                    end
-                    for rng = 1:length(fit_results[dataset]["ranges"])
-                        if !isnothing(hist_weights_dict) && !(rng in keys(hist_weights_dict[rngs][cat]))
-                            hist_weights_dict[rngs][cat][rng] = zeros(length(xaxis)-1, length(yaxis)-1)
-                        end
-                        hist_weights_cats_ec[dataset][rngs][cat][rng] = zeros(length(xaxis)-1, length(yaxis)-1)
-                        for neuron = analysis_dict["encoding_changes"][dataset][rngs][cat]
-                            if !(neuron in analysis_dict["encoding_changing_neurons_msecorrect_mh"][dataset][rngs]["neurons"])
-                                continue
-                            end
-                            hist_fit = fit(Histogram, (analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
-                            hist_weights_cats_ec[dataset][rngs][cat][rng] .+= hist_fit.weights
-                            if !isnothing(hist_weights_dict)
-                                hist_weights_dict[rngs][cat][rng] .+= hist_fit.weights
-                            end
-                            if !isnothing(dict_stats) && rng == 1
-                                dict_stats[rngs][cat] += 1
-                                dict_stats_dataset[dataset][rngs][cat] += 1
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    analysis_dict["umap_hist_weights_cats_ec$(suffix)"] = hist_weights_cats_ec
     return nothing
 end

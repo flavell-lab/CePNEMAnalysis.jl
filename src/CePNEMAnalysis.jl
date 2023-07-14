@@ -87,7 +87,6 @@ export
     correct_encoding_changes,
     get_enc_change_stats,
     encoding_summary_stats,
-    get_subcats,
     get_enc_change_cat_p_vals,
     get_enc_change_cat_p_vals_dataset,
     get_enc_change_category,
@@ -122,6 +121,7 @@ export
     plot_arrow!,
     color_to_rgba,
     plot_colorbar,
+    get_color_from_palette,
     # pca.jl
     extrapolate_neurons,
     make_distance_matrix,
@@ -153,6 +153,8 @@ export
     find_peaks,
     parse_tuning_strength,
     get_random_sample_without_feature,
+    get_frac_responding,
+    get_subcats,
     # state.jl
     fit_state_classifier,
     compute_state_neuron_candidates

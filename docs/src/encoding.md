@@ -5,7 +5,6 @@
 ```@docs
 categorize_all_neurons
 categorize_neurons
-neuron_p_vals
 get_all_neurons_with_feature
 get_random_sample_without_feature
 get_subcats

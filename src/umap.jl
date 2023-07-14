@@ -442,9 +442,9 @@ function compute_umap_subcategories!(fit_results, analysis_dict, umap_dict, data
         for rng = 1:length(fit_results[dataset]["ranges"])
             for neuron = 1:fit_results[dataset]["num_neurons"]
                 if use_median
-                    hist_fit = fit(Histogram, ([median(umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:])], [median(analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:])]), (xaxis, yaxis))
+                    hist_fit = fit(Histogram, ([median(umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:])], [median(umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:])]), (xaxis, yaxis))
                 else
-                    hist_fit = fit(Histogram, (umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], analysis_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
+                    hist_fit = fit(Histogram, (umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][1,:], umap_dict["umap_extrap_all$(suffix)"][dataset][rng][neuron][2,:]), (xaxis, yaxis))
                 end
                 
                 for k_beh in keys(analysis_dict["neuron_categorization"][dataset][rng])

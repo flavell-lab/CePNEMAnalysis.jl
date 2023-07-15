@@ -16,11 +16,4 @@ This package provides a collection of tools for interpreting and visualizing CeP
 - `CePNEM-auxiliary.ipynb`: Presents less-commonly used plots and functions, such as model validation metrics, decoder training, and more.
 
 ## Citation
-
-Brain-wide representations of behavior spanning multiple timescales and states in *C. elegans*
-
-Adam A. Atanas*, Jungsoo Kim*, Ziyu Wang, Eric Bueno, McCoy Becker, Di Kang, Jungyeon Park, Cassi Estrem, Talya S. Kramer, Saba Baskoylu, Vikash K. Mansinghka, Steven W. Flavell
-
-bioRxiv 2022.11.11.516186; doi: https://doi.org/10.1101/2022.11.11.516186
-
-\* equal contribution
+To cite this work, please refer to [this article](https://github.com/flavell-lab/AtanasKim-Cell2023/tree/main#citation).

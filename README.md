@@ -17,3 +17,6 @@ This package provides a collection of tools for interpreting and visualizing CeP
 
 ## Citation
 To cite this work, please refer to [this article](https://github.com/flavell-lab/AtanasKim-Cell2023/tree/main#citation).
+
+## Data download
+To download our preprocessed data compatible with loading into our notebooks, please see the `.jld2` files [here](https://zenodo.org/record/8185377).

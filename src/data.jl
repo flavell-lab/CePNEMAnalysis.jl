@@ -210,11 +210,12 @@ Exports CePNEM analysis results to JSON file for use on the website.
 - `analysis_dict::Dict`: Dictionary of CePNEM analysis results.
 - `relative_encoding_strength::Dict`: Dictionary of relative encoding strength values for each neuron.
 - `datasets::Vector{String}`: List of datasets to export.
+- `dataset_categorization::Dict`: Dictionary of dataset categories (eg: `stim`) and the datasets that belong to them.
 - `path_output::String`: Name of JSON directory to export to.
 - `path_h5::String`: Path to HDF5 directory containing raw data.
 """
 function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encoding_strength::Dict, 
-        datasets::Vector{String}, path_output::String, path_h5::String)
+        datasets::Vector{String}, dataset_categorization::Dict, path_output::String, path_h5::String)
 
     θh_pos_is_ventral = analysis_dict["θh_pos_is_ventral"]
     dict_summary = OrderedDict()    
@@ -293,17 +294,11 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encodin
         dict_summary[dataset]["max_t"] = fit_results[dataset]["ranges"][end][end]
         dict_dataset["max_t"] = fit_results[dataset]["ranges"][end][end]
         dict_summary[dataset]["dataset_type"] = String[]
-        if dataset in datasets_stim_all
-            push!(dict_summary[dataset]["dataset_type"], "heat")
-        end
-        if dataset in datasets_gfp
-            push!(dict_summary[dataset]["dataset_type"], "heat")
-        end
-        if dataset in datasets_baseline || dataset in datasets_neuropal_baseline
-            push!(dict_summary[dataset]["dataset_type"], "baseline")
-        end
-        if dataset in datasets_neuropal
-            push!(dict_summary[dataset]["dataset_type"], "neuropal")
+
+        for category in sort(collect(keys(dataset_categorization)))
+            if dataset in dataset_categorization[category]
+                push!(dict_summary[dataset]["dataset_type"], category)
+            end
         end
 
         dict_dataset["dataset_type"] = dict_summary[dataset]["dataset_type"]

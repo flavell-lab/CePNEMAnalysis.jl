@@ -313,10 +313,7 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encodin
         
         path_data_ = joinpath(path_h5, "$(dataset)-data.h5")
         data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events"])
-        dict_dataset["reversal_events"] = []
-        for i in 1:length(data_dict["behavior/reversal_events"][1])
-            push!(dict_dataset["reversal_events"], [data_dict["behavior/reversal_events"][1][i], data_dict["behavior/reversal_events"][2][i]])
-        end
+        dict_dataset["reversal_events"] = transpose(data_dict["behavior/reversal_events"])
         dict_dataset["timestamp_confocal"] = data_dict["timestamp_confocal"]
         dict_dataset["trace_original"] = data_dict["trace_original"]
 

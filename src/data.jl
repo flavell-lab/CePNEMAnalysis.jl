@@ -311,7 +311,7 @@ function export_to_json(fit_results::Dict, analysis_dict::Dict, relative_encodin
             dict_dataset["labeled"] = Dict()
         end
         
-        path_data_ = joinpath(path_h5_data, "$(dataset)-data.h5")
+        path_data_ = joinpath(path_h5, "$(dataset)-data.h5")
         data_dict = import_data(path_data_, custom_keys=["behavior/reversal_events"])
         dict_dataset["reversal_events"] = data_dict["behavior/reversal_events"]
         dict_dataset["timestamp_confocal"] = data_dict["timestamp_confocal"]

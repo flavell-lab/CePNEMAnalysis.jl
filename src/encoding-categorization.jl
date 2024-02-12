@@ -157,6 +157,13 @@ function neuron_p_vals(deconvolved_activity_1, deconvolved_activity_2, signal, t
     θh_thresh = max.(threshold_artifact / signal, θh_ratio .* threshold_weak)
     P_thresh = max.(threshold_artifact / signal, P_ratio .* threshold_weak)
     
+    # if threshold is NaN, set it to Inf so that no encodings are found
+    for (i, thresh) in enumerate(P_thresh)
+        if(isnan(thresh))
+            P_thresh[i] = Inf
+        end
+    end
+
     for (i,j) in VALID_V_COMPARISONS
         if i > j
             continue
@@ -562,6 +569,7 @@ and the raw (not multiple-hypothesis corrected) p-values.
 - `θh_pos_is_ventral`: Whether positive θh value corresponds to ventral (`true`) or dorsal (`false`) head bending.
 - `threshold_artifact`: Deconvolved activity must differ by at least this much, to filter out motion artifacts
 - `threshold_weak`: Non-deconvolved activity must differ by at least this much, to filter out weak overfitting encodings
+- `relative_encoding_strength::Dict`: The dictionary of relative encoding strengths.
 - `P_diff_thresh` (optional, default `0`): Minimum feeding variance in a time range necessary for trying to compute feeding info.
 - `rel_enc_str_correct` (optional, default `0`): Threshold for deleting neurons with too low relative encoding strength.
 """
